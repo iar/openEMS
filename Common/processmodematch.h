@@ -20,6 +20,7 @@
 
 #include "processintegral.h"
 #include "CSModeData.h"
+#include "../tools/arraylib/array_ijk.h"
 
 class CSFunctionParser;
 
@@ -73,7 +74,7 @@ protected:
 	double m_WeightOrigin[3];
 
 	unsigned int m_numLines[2];
-	double** m_ModeDist[2];
+	ArrayLib::ArrayIJK<double> m_ModeDist;
 };
 
 #endif // PROCESSMODEMATCH_H

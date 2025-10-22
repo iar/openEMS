@@ -19,7 +19,6 @@
 #include "processmodematch.h"
 #include "CSFunctionParser.h"
 #include "Common/operator_base.h"
-#include "tools/array_ops.h"
 
 using namespace std;
 
@@ -30,7 +29,6 @@ ProcessModeMatch::ProcessModeMatch(Engine_Interface_Base* eng_if) : ProcessInteg
 	for (int n=0; n<2; ++n)
 	{
 		m_ModeParser[n] = new CSFunctionParser();
-		m_ModeDist[n] = NULL;
 	}
 	delete[] m_Results;
 	m_Results = new double[2];
@@ -43,7 +41,6 @@ ProcessModeMatch::~ProcessModeMatch()
 	for (int n=0; n<2; ++n)
 	{
 		delete m_ModeParser[n];
-		m_ModeParser[n] = NULL;
 	}
 	Reset();
 }
@@ -144,10 +141,7 @@ void ProcessModeMatch::InitProcess()
 		}
 	}
 
-	for (int n=0; n<2; ++n)
-	{
-		m_ModeDist[n] = Create2DArray<double>(m_numLines);
-	}
+	m_ModeDist.Init("ModeDist", {2, m_numLines[0], m_numLines[1]});
 
 	unsigned int pos[3] = {0,0,0};
 	double discLine[3] = {0,0,0};
@@ -207,20 +201,19 @@ void ProcessModeMatch::InitProcess()
 			if (!m_WeightFile.empty())
 			{
 				auto fields = modeFile.LinInterp2(var[nP], var[nPP]);
-				m_ModeDist[0][posP][posPP] = fields[0];
-				m_ModeDist[1][posP][posPP] = fields[1];
+				m_ModeDist(0, posP, posPP) = fields[0];
+				m_ModeDist(1, posP, posPP) = fields[1];
 			}
 			else
 				for (int n = 0; n < 2; ++n)
 				{
-					m_ModeDist[n][posP][posPP] = m_ModeParser[n]->Eval(var);
-					if ((std::isnan(m_ModeDist[n][posP][posPP])) || (std::isinf(m_ModeDist[n][posP][posPP])))
-						m_ModeDist[n][posP][posPP] = 0.0;
+					m_ModeDist(n, posP, posPP) = m_ModeParser[n]->Eval(var);
+					if ((std::isnan(m_ModeDist(n, posP, posPP))) || (std::isinf(m_ModeDist(n, posP, posPP))))
+						m_ModeDist(n, posP, posPP) = 0.0;
 				}
 
-			// Second pass, for normalization
 			for (int n=0; n<2; ++n)
-				norm += pow(m_ModeDist[n][posP][posPP],2) * area;
+				norm += pow(m_ModeDist(n, posP, posPP),2) * area;
 
 		}
 	}
@@ -233,9 +226,9 @@ void ProcessModeMatch::InitProcess()
 		{
 			for (int n=0; n<2; ++n)
 			{
-				m_ModeDist[n][posP][posPP] /= norm;
+				m_ModeDist(n, posP, posPP) /= norm;
 			}
-//			cerr << posP << " " << posPP << " : " << m_ModeDist[0][posP][posPP] << " , " << m_ModeDist[1][posP][posPP] << endl;
+//			cerr << posP << " " << posPP << " : " << m_ModeDist[0](posP, posPP) << " , " << m_ModeDist[1](posP, posPP) << endl;
 		}
 
 	ProcessIntegral::InitProcess();
@@ -244,11 +237,7 @@ void ProcessModeMatch::InitProcess()
 void ProcessModeMatch::Reset()
 {
 	ProcessIntegral::Reset();
-	for (int n=0; n<2; ++n)
-	{
-		Delete2DArray<double>(m_ModeDist[n],m_numLines);
-		m_ModeDist[n] = NULL;
-	}
+	m_ModeDist.Reset();
 }
 
 void ProcessModeMatch::SetWeightFunction(int ny, string function)
@@ -297,7 +286,7 @@ double* ProcessModeMatch::CalcMultipleIntegrals()
 			for (int n=0; n<2; ++n)
 			{
 				field = out[(m_ny+n+1)%3];
-				value += field * m_ModeDist[n][posP][posPP] * area;
+				value += field * m_ModeDist(n, posP, posPP) * area;
 				purity += field*field * area;
 			}
 		}
