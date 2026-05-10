@@ -239,16 +239,25 @@ install_requires = [
 install_requires += add_h5py()
 
 try:
-    # CSXCAD already installed, use a plain package name as dependency,
-    # pip won't rebuild it. This ensures manual package management still
-    # works, and pip won't redownload anything from git.
-    import CSXCAD
-    install_requires += ["CSXCAD"]
+    # importlib.metadata (Python 3.8+) checks whether the package is registered
+    # without importing it.  On Windows, importing CSXCAD raises ImportError
+    # when CSXCAD.dll is not yet on PATH even if the package is installed,
+    # which caused add_csxcad() to bake the CI build path into Requires-Dist.
+    from importlib.metadata import version as _pkg_version, PackageNotFoundError
+    try:
+        _pkg_version("CSXCAD")
+        install_requires += ["CSXCAD"]
+    except PackageNotFoundError:
+        install_requires += add_csxcad()
 except ImportError:
-    # CSXCAD not installed, use CSXCAD with file:// or git:// as dependency.
-    # As a side-effect, pip always rebuilds CSXCAD from scratch regardless
-    # of whether it's installed. We don't want this side-effect.
-    install_requires += add_csxcad()
+    # Python < 3.8: importlib.metadata unavailable.  These old interpreters
+    # only appear on Linux (CentOS 7 / AlmaLinux 8 / Ubuntu 14.04) where
+    # "import CSXCAD" works reliably once the package is installed.
+    try:
+        import CSXCAD  # noqa: F401
+        install_requires += ["CSXCAD"]
+    except ImportError:
+        install_requires += add_csxcad()
 
 setup(
   name="openEMS",
