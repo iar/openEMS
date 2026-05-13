@@ -17,8 +17,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import os, sys, shutil
+import os, sys, glob
 import numpy as np
+import h5py
 cimport openEMS
 from openEMS import ports, nf2ff, automesh
 from pathlib import Path
@@ -510,13 +511,46 @@ cdef class openEMS:
         cdef vector[string] allOptionsBuffer = allOptions
         self.thisptr.SetLibraryArguments(allOptionsBuffer)
 
+    def _cleanup_sim_path(self, sim_path, verbose=False):
+        # Whitelist of plain glob patterns — always deleted when matched.
+        # Extend this list as new output file types are added to openEMS.
+        _ALWAYS_DELETE = [
+            'et', 'ht',                      # excitation time-series (ASCII)
+            'port_ut*', 'port_it*',          # port voltage/current (ASCII)
+            'nf2ff*.h5',                     # NF2FF HDF5 results
+            '*.vtp', '*.vtk', '*.vtr', '*.pvd',  # VTK visualisation files
+            'openEMS_run_stats.txt',
+            'openEMS_stats.txt',
+            'debugCSX.xml',
+        ]
+        for pattern in _ALWAYS_DELETE:
+            for f in glob.glob(os.path.join(sim_path, pattern)):
+                if os.path.isfile(f):
+                    if verbose:
+                        print('cleanup: removing {}'.format(f))
+                    os.remove(f)
+        # *.h5 files are deleted when they carry the openEMS field-dump
+        # fingerprint attribute or contain the /nf2ff group (covers nf2ff
+        # output files regardless of their filename).
+        for f in glob.glob(os.path.join(sim_path, '*.h5')):
+            if not os.path.isfile(f):
+                continue
+            try:
+                with h5py.File(f, 'r') as h:
+                    if 'openEMS_HDF5_version' in h.attrs or '/nf2ff' in h:
+                        if verbose:
+                            print('cleanup: removing {}'.format(f))
+                        os.remove(f)
+            except Exception:
+                pass
+
     def Run(self, sim_path, cleanup=False, setup_only=False, **kw):
         """ Run(sim_path, cleanup=False, setup_only=False, verbose=None)
 
         Run the openEMS FDTD simulation.
 
         :param sim_path: str -- path to run in and create result data
-        :param cleanup: bool -- remove existing sim_path to cleanup old results
+        :param cleanup: bool -- delete known openEMS output files from sim_path before running (only whitelisted file patterns are removed)
         :param setup_only: bool -- only perform FDTD setup, do not run simulation
 
         One can also pass almost all command-line options supported by the main
@@ -541,8 +575,7 @@ cdef class openEMS:
           components
         """
         if cleanup and os.path.exists(sim_path):
-            shutil.rmtree(sim_path, ignore_errors=True)
-            os.mkdir(sim_path)
+            self._cleanup_sim_path(sim_path, verbose=kw.get('verbose'))
         if not os.path.exists(sim_path):
             os.mkdir(sim_path)
         os.chdir(sim_path)

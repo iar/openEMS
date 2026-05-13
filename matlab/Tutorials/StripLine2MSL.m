@@ -106,8 +106,7 @@ CSX = AddPolygon( CSX, 'gnd', 1, 'z', strip_substrate_thickness, p);
 Sim_Path = 'tmp';
 Sim_CSX = 'strip2msl.xml';
 
-[status, message, messageid] = rmdir( Sim_Path, 's' ); % clear previous directory
-[status, message, messageid] = mkdir( Sim_Path ); % create empty simulation folder
+CleanupSimPath(Sim_Path);
 
 WriteOpenEMS( [Sim_Path '/' Sim_CSX], FDTD, CSX );
 CSXGeomPlot( [Sim_Path '/' Sim_CSX] );

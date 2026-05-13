@@ -115,13 +115,10 @@ kc = np.pi / (a * unit)     # TE10 cutoff wavenumber (rad/m)
 # Paths & mode files
 # ---------------------------------------------------------------------------
 Sim_Path  = os.path.join(tempfile.gettempdir(), 'Rect_WG_HDF5')
+os.makedirs(Sim_Path, exist_ok=True)
 
-# Mode files live outside Sim_Path — cleanup=True would delete them otherwise
-Mode_Path = os.path.join(tempfile.gettempdir(), 'Rect_WG_HDF5_modes')
-os.makedirs(Mode_Path, exist_ok=True)
-
-E_file = os.path.join(Mode_Path, 'TE10_E.h5')
-H_file = os.path.join(Mode_Path, 'TE10_H.h5')
+E_file = os.path.join(Sim_Path, 'TE10_E.h5')
+H_file = os.path.join(Sim_Path, 'TE10_H.h5')
 
 make_rect_wg_te10_hdf5(E_file, 'E', a, b)
 make_rect_wg_te10_hdf5(H_file, 'H', a, b)

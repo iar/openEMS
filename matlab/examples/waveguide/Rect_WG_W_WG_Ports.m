@@ -103,8 +103,7 @@ CSX = DefineRectGrid(CSX, unit, mesh);
 
 % -------------------------------------------------------------------------
 % Run
-[~] = rmdir(Sim_Path, 's');
-mkdir(Sim_Path);
+CleanupSimPath(Sim_Path);
 
 WriteOpenEMS(fullfile(Sim_Path, 'rect_wg.xml'), FDTD, CSX);
 RunOpenEMS(Sim_Path, 'rect_wg.xml');
