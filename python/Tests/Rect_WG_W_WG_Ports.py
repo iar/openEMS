@@ -23,6 +23,7 @@ import h5py
 from CSXCAD  import ContinuousStructure
 from openEMS import openEMS
 from openEMS.physical_constants import C0
+from openEMS.utilities import check_mode_purity
 
 
 def make_rect_wg_te10_hdf5(filename, field_type, a_draw, b_draw, N=60):
@@ -60,40 +61,6 @@ def make_rect_wg_te10_hdf5(filename, field_type, a_draw, b_draw, N=60):
         f.create_dataset('Vy', data=Vy)
 
 
-def check_mode_purity(label, signal, purity, threshold=0.99, sig_frac=0.001):
-    """Assert mode purity > threshold where the signal is above sig_frac * peak.
-
-    Parameters
-    ----------
-    label : str
-        Descriptive name for the assertion message.
-    signal : array
-        Time-domain signal amplitude (column 1 of probe file).
-    purity : array or None
-        Mode purity values (column 2 of probe file), or None if not available.
-    threshold : float
-        Minimum acceptable mode purity (default 0.99 = 99 %).
-    sig_frac : float
-        Ignore time steps where |signal| < sig_frac * max(|signal|).
-
-    Notes
-    -----
-    Purity can be negative when the wave travels in the opposite direction
-    (e.g. the receive port seeing the transmitted wave), so |purity| is used.
-    """
-    if purity is None:
-        return
-    mask = np.abs(signal) >= sig_frac * np.max(np.abs(signal))
-    if not np.any(mask):
-        return
-    min_purity = np.min(np.abs(purity[mask]))
-    print('{}: min mode purity = {:.1f}% ({:.1f}% of samples considered)'.format(
-        label, 100*min_purity, 100*np.sum(mask)/len(signal)))
-    assert min_purity >= threshold, \
-        '{}: mode purity {:.1f}% below {:.0f}% threshold'.format(
-            label, 100*min_purity, 100*threshold)
-
-
 # ---------------------------------------------------------------------------
 # Geometry & simulation parameters  (WR-42, identical to tutorial)
 # ---------------------------------------------------------------------------
@@ -126,7 +93,7 @@ make_rect_wg_te10_hdf5(H_file, 'H', a, b)
 # ---------------------------------------------------------------------------
 # FDTD & CSX setup
 # ---------------------------------------------------------------------------
-FDTD = openEMS(NrTS=1e4)
+FDTD = openEMS()
 FDTD.SetGaussExcite(0.5*(f_start+f_stop), 0.5*(f_stop-f_start))
 FDTD.SetBoundaryCond([0, 0, 0, 0, 3, 3])
 
@@ -178,8 +145,8 @@ for port in ports:
 # ---------------------------------------------------------------------------
 for port in ports:
     lbl = 'port {}'.format(port.number)
-    check_mode_purity(lbl + ' U', port.u_data.ui_val[0], port.u_mode_purity[0])
-    check_mode_purity(lbl + ' I', port.i_data.ui_val[0], port.i_mode_purity[0])
+    check_mode_purity(lbl + ' U', port.u_data.ui_val[0], port.u_mode_purity[0], threshold=0.99, sig_frac=0.001)
+    check_mode_purity(lbl + ' I', port.i_data.ui_val[0], port.i_mode_purity[0], threshold=0.99, sig_frac=0.001)
 
 s11 = ports[0].uf_ref / ports[0].uf_inc
 s21 = ports[1].uf_ref / ports[0].uf_inc

@@ -20,7 +20,10 @@ import unittest
 import numpy as np
 
 from CSXCAD import ContinuousStructure
-from openEMS.ports import LumpedPort, RectWGPort, WaveguidePort
+from openEMS.ports import (LumpedPort, RectWGPort, WaveguidePort,
+                            CircWGPort, CoaxialPort, StripLinePort, CPWPort, CurvePort)
+
+C0 = 299792458.0  # speed of light
 
 
 def _make_csx():
@@ -30,6 +33,39 @@ def _make_csx():
     grid.SetLines('x', np.linspace(-50, 50, 11))
     grid.SetLines('y', np.linspace(-50, 50, 11))
     grid.SetLines('z', np.linspace(-5, 5, 5))
+    return csx
+
+
+def _make_csx_circ():
+    """Grid large enough for a 320 mm radius circular waveguide (z-propagation)."""
+    csx = ContinuousStructure()
+    grid = csx.GetGrid()
+    grid.SetDeltaUnit(1e-3)
+    grid.SetLines('x', np.linspace(-350, 350, 15))
+    grid.SetLines('y', np.linspace(-350, 350, 15))
+    grid.SetLines('z', np.linspace(0, 200, 15))
+    return csx
+
+
+def _make_csx_coax():
+    """Grid for a z-directed coaxial port (r_i=2, r_o=6, r_os=7 mm)."""
+    csx = ContinuousStructure()
+    grid = csx.GetGrid()
+    grid.SetDeltaUnit(1e-3)
+    grid.SetLines('x', np.linspace(-10, 10, 25))
+    grid.SetLines('y', np.linspace(-10, 10, 25))
+    grid.SetLines('z', np.linspace(0, 100, 15))
+    return csx
+
+
+def _make_csx_tl():
+    """Grid for an x-propagating stripline / CPW port."""
+    csx = ContinuousStructure()
+    grid = csx.GetGrid()
+    grid.SetDeltaUnit(1e-3)
+    grid.SetLines('x', np.linspace(0, 100, 15))
+    grid.SetLines('y', np.linspace(-8, 8, 20))
+    grid.SetLines('z', np.linspace(-10, 10, 20))
     return csx
 
 
@@ -136,6 +172,377 @@ class Test_RectWGPort(unittest.TestCase):
                           a=20e-3, b=10e-3, mode_name='TE10', excite=0)
         self.assertEqual(len(port.U_filenames), 1)
         self.assertEqual(len(port.I_filenames), 1)
+
+
+class Test_CircWGPort(unittest.TestCase):
+    def setUp(self):
+        self.csx    = _make_csx_circ()
+        self.radius = 320e-3  # 320 mm
+
+    def _make_port(self, mode='TE11', pol_ang=0, excite=0):
+        return CircWGPort(self.csx, port_nr=1,
+                          start=[0, 0, 0], stop=[0, 0, 200],
+                          exc_dir='z', radius=self.radius,
+                          mode_name=mode, pol_ang=pol_ang, excite=excite)
+
+    def test_te11_kc(self):
+        port = self._make_port('TE11')
+        expected_kc = CircWGPort._pnm[(1, 1)] / self.radius
+        self.assertAlmostEqual(port.kc, expected_kc, places=6)
+
+    def test_te01_kc(self):
+        port = self._make_port('TE01')
+        expected_kc = CircWGPort._pnm[(0, 1)] / self.radius
+        self.assertAlmostEqual(port.kc, expected_kc, places=6)
+
+    def test_te21_kc(self):
+        port = self._make_port('TE21')
+        expected_kc = CircWGPort._pnm[(2, 1)] / self.radius
+        self.assertAlmostEqual(port.kc, expected_kc, places=6)
+
+    def test_te11_cutoff_frequency(self):
+        port = self._make_port('TE11')
+        fc = C0 * port.kc / (2 * np.pi)
+        expected_fc = C0 * CircWGPort._pnm[(1, 1)] / (2 * np.pi * self.radius)
+        self.assertAlmostEqual(fc / expected_fc, 1.0, places=10)
+
+    def test_probe_filenames(self):
+        port = self._make_port()
+        self.assertEqual(len(port.U_filenames), 1)
+        self.assertEqual(len(port.I_filenames), 1)
+
+    def test_passive_port_no_excitation(self):
+        port_passive = self._make_port(excite=0)
+        port_active  = CircWGPort(self.csx, port_nr=2,
+                                  start=[0, 0, 0], stop=[0, 0, 200],
+                                  exc_dir='z', radius=self.radius,
+                                  mode_name='TE11', excite=1)
+        self.assertGreater(len(port_active.port_props), len(port_passive.port_props))
+
+    def test_tm_mode_raises(self):
+        with self.assertRaises(Exception):
+            self._make_port('TM11')
+
+    def test_unknown_mode_raises(self):
+        with self.assertRaises(Exception):
+            self._make_port('TE99')
+
+    def test_pol_ang_accepted(self):
+        port = self._make_port('TE11', pol_ang=np.pi / 2)
+        self.assertIsNotNone(port)
+
+    def test_port_number_in_probe_names(self):
+        port = CircWGPort(self.csx, port_nr=7,
+                          start=[0, 0, 0], stop=[0, 0, 200],
+                          exc_dir='z', radius=self.radius, mode_name='TE11')
+        self.assertIn('7', port.U_filenames[0])
+
+    def test_name_prefix(self):
+        port = CircWGPort(self.csx, port_nr=1,
+                          start=[0, 0, 0], stop=[0, 0, 200],
+                          exc_dir='z', radius=self.radius, mode_name='TE11',
+                          PortNamePrefix='wg_')
+        self.assertTrue(port.U_filenames[0].startswith('wg_'))
+
+    def test_all_pnm_modes_accepted(self):
+        for (n, m) in CircWGPort._pnm:
+            mode = 'TE{}{}'.format(n, m)
+            port = CircWGPort(self.csx, port_nr=1,
+                              start=[0, 0, 0], stop=[0, 0, 200],
+                              exc_dir='z', radius=self.radius, mode_name=mode)
+            self.assertAlmostEqual(port.kc, CircWGPort._pnm[(n, m)] / self.radius, places=6)
+
+
+class Test_CoaxialPort(unittest.TestCase):
+    def setUp(self):
+        self.csx = _make_csx_coax()
+        self.pec  = self.csx.AddMetal('pec')
+        self.mat  = self.csx.AddMaterial('fill', epsilon=2.1)
+        self.kw   = dict(r_i=2, r_o=6, r_os=7)
+
+    def _make_port(self, excite_amp=0, feed_R=np.inf, extra_kw=None):
+        kw = dict(**self.kw)
+        kw['Feed_R'] = feed_R
+        if extra_kw:
+            kw.update(extra_kw)
+        return CoaxialPort(self.csx, port_nr=1, pec_prop=self.pec, mat_prop=self.mat,
+                           start=[0, 0, 0], stop=[0, 0, 100],
+                           prop_dir='z', excite_amp=excite_amp, **kw)
+
+    def test_passive_port(self):
+        port = self._make_port()
+        self.assertEqual(port.excite, 0)
+
+    def test_active_port_has_more_props(self):
+        passive = self._make_port(excite_amp=0)
+        active  = CoaxialPort(_make_csx_coax(), port_nr=1,
+                               pec_prop=_make_csx_coax().AddMetal('p'),
+                               mat_prop=None,
+                               start=[0, 0, 0], stop=[0, 0, 100],
+                               prop_dir='z', excite_amp=1, **self.kw)
+        self.assertGreater(len(active.port_props), len(passive.port_props))
+
+    def test_three_voltage_probes(self):
+        port = self._make_port()
+        self.assertEqual(len(port.U_filenames), 3)
+
+    def test_two_current_probes(self):
+        port = self._make_port()
+        self.assertEqual(len(port.I_filenames), 2)
+
+    def test_radii_stored(self):
+        port = self._make_port()
+        self.assertEqual(port.r_i, 2)
+        self.assertEqual(port.r_o, 6)
+
+    def test_measplane_shift_set(self):
+        port = self._make_port()
+        self.assertGreater(port.measplane_shift, 0)
+
+    def test_u_delta_positive(self):
+        port = self._make_port()
+        self.assertTrue(np.all(port.U_delta > 0))
+
+    def test_feed_r_inf_open(self):
+        port = self._make_port(feed_R=np.inf)
+        self.assertIsNotNone(port)
+
+    def test_feed_r_zero_short(self):
+        port = self._make_port(feed_R=0)
+        self.assertIsNotNone(port)
+
+    def test_feed_r_positive_raises(self):
+        with self.assertRaises(NotImplementedError):
+            self._make_port(feed_R=50)
+
+    def test_feed_r_negative_raises(self):
+        with self.assertRaises(Exception):
+            self._make_port(feed_R=-1)
+
+    def test_no_material_fill(self):
+        port = CoaxialPort(self.csx, port_nr=2, pec_prop=self.pec, mat_prop=None,
+                           start=[0, 0, 0], stop=[0, 0, 100],
+                           prop_dir='z', **self.kw)
+        self.assertIsNotNone(port)
+
+    def test_meas_plane_shift_kwarg(self):
+        port = self._make_port(extra_kw={'MeasPlaneShift': 20})
+        self.assertGreater(port.measplane_shift, 0)
+
+    def test_port_number_in_probe_names(self):
+        port = CoaxialPort(self.csx, port_nr=5, pec_prop=self.pec, mat_prop=None,
+                           start=[0, 0, 0], stop=[0, 0, 100],
+                           prop_dir='z', **self.kw)
+        self.assertIn('5', port.U_filenames[0])
+
+
+class Test_StripLinePort(unittest.TestCase):
+    def setUp(self):
+        self.csx   = _make_csx_tl()
+        self.metal = self.csx.AddMetal('strip')
+
+    def _make_port(self, excite=False, feed_R=np.inf, extra_kw=None):
+        kw = {'Feed_R': feed_R}
+        if extra_kw:
+            kw.update(extra_kw)
+        return StripLinePort(self.csx, port_nr=1, metal_prop=self.metal,
+                             start=[0, -3, 0], stop=[100, 3, 0],
+                             prop_dir='x', exc_dir='z', height=8,
+                             excite=excite, **kw)
+
+    def test_passive_port(self):
+        port = self._make_port()
+        self.assertIsNotNone(port)
+
+    def test_six_voltage_probes(self):
+        port = self._make_port()
+        self.assertEqual(len(port.U_filenames), 6)
+
+    def test_two_current_probes(self):
+        port = self._make_port()
+        self.assertEqual(len(port.I_filenames), 2)
+
+    def test_probe_suffixes(self):
+        port = self._make_port()
+        self.assertTrue(any('A1' in fn for fn in port.U_filenames))
+        self.assertTrue(any('A2' in fn for fn in port.U_filenames))
+        self.assertTrue(any('B1' in fn for fn in port.U_filenames))
+        self.assertTrue(any('C2' in fn for fn in port.U_filenames))
+
+    def test_active_port_has_more_props(self):
+        passive = self._make_port(excite=False)
+        active  = StripLinePort(_make_csx_tl(), port_nr=1,
+                                metal_prop=_make_csx_tl().AddMetal('s2'),
+                                start=[0, -3, 0], stop=[100, 3, 0],
+                                prop_dir='x', exc_dir='z', height=8,
+                                excite=True)
+        self.assertGreater(len(active.port_props), len(passive.port_props))
+
+    def test_height_direction_mismatch_raises(self):
+        with self.assertRaises(Exception):
+            StripLinePort(self.csx, port_nr=1, metal_prop=self.metal,
+                          start=[0, -3, 0], stop=[100, 3, 5],
+                          prop_dir='x', exc_dir='z', height=8, excite=False)
+
+    def test_measplane_shift_set(self):
+        port = self._make_port()
+        self.assertGreater(port.measplane_shift, 0)
+
+    def test_u_delta_positive(self):
+        port = self._make_port()
+        self.assertTrue(np.all(port.U_delta > 0))
+
+    def test_feed_r_finite(self):
+        port = self._make_port(feed_R=50)
+        self.assertIsNotNone(port)
+
+    def test_feed_r_zero_short(self):
+        port = self._make_port(feed_R=0)
+        self.assertIsNotNone(port)
+
+    def test_meas_plane_shift_kwarg(self):
+        port = self._make_port(extra_kw={'MeasPlaneShift': 20})
+        self.assertGreater(port.measplane_shift, 0)
+
+    def test_port_number_in_probe_names(self):
+        port = StripLinePort(self.csx, port_nr=9, metal_prop=self.metal,
+                             start=[0, -3, 0], stop=[100, 3, 0],
+                             prop_dir='x', exc_dir='z', height=8)
+        self.assertIn('9', port.U_filenames[0])
+
+
+class Test_CPWPort(unittest.TestCase):
+    def setUp(self):
+        self.csx   = _make_csx_tl()
+        self.metal = self.csx.AddMetal('cpw')
+
+    def _make_port(self, excite=False, feed_R=np.inf, extra_kw=None):
+        kw = {'Feed_R': feed_R}
+        if extra_kw:
+            kw.update(extra_kw)
+        return CPWPort(self.csx, port_nr=1, metal_prop=self.metal,
+                       start=[0, -3, 0], stop=[100, 3, 0],
+                       prop_dir='x', exc_dir='z', gap_width=1,
+                       excite=excite, **kw)
+
+    def test_passive_port(self):
+        port = self._make_port()
+        self.assertIsNotNone(port)
+
+    def test_six_voltage_probes(self):
+        port = self._make_port()
+        self.assertEqual(len(port.U_filenames), 6)
+
+    def test_two_current_probes(self):
+        port = self._make_port()
+        self.assertEqual(len(port.I_filenames), 2)
+
+    def test_probe_suffixes(self):
+        port = self._make_port()
+        self.assertTrue(any('A1' in fn for fn in port.U_filenames))
+        self.assertTrue(any('B2' in fn for fn in port.U_filenames))
+
+    def test_active_port_has_more_props(self):
+        passive = self._make_port(excite=False)
+        active  = CPWPort(_make_csx_tl(), port_nr=1,
+                          metal_prop=_make_csx_tl().AddMetal('c2'),
+                          start=[0, -3, 0], stop=[100, 3, 0],
+                          prop_dir='x', exc_dir='z', gap_width=1,
+                          excite=True)
+        self.assertGreater(len(active.port_props), len(passive.port_props))
+
+    def test_height_direction_mismatch_raises(self):
+        with self.assertRaises(Exception):
+            CPWPort(self.csx, port_nr=1, metal_prop=self.metal,
+                    start=[0, -3, 0], stop=[100, 3, 5],
+                    prop_dir='x', exc_dir='z', gap_width=1, excite=False)
+
+    def test_measplane_shift_set(self):
+        port = self._make_port()
+        self.assertGreater(port.measplane_shift, 0)
+
+    def test_u_delta_positive(self):
+        port = self._make_port()
+        self.assertTrue(np.all(port.U_delta > 0))
+
+    def test_feed_r_finite(self):
+        port = self._make_port(feed_R=50)
+        self.assertIsNotNone(port)
+
+    def test_feed_r_zero_short(self):
+        port = self._make_port(feed_R=0)
+        self.assertIsNotNone(port)
+
+    def test_port_number_in_probe_names(self):
+        port = CPWPort(self.csx, port_nr=4, metal_prop=self.metal,
+                       start=[0, -3, 0], stop=[100, 3, 0],
+                       prop_dir='x', exc_dir='z', gap_width=1)
+        self.assertIn('4', port.U_filenames[0])
+
+
+class Test_CurvePort(unittest.TestCase):
+    def setUp(self):
+        self.csx = _make_csx()
+
+    def test_z_ref_stored(self):
+        port = CurvePort(self.csx, port_nr=1, R=75,
+                         start=[0, 0, -5], stop=[0, 0, 5])
+        self.assertEqual(port.Z_ref, 75)
+        self.assertEqual(port.R, 75)
+
+    def test_single_voltage_probe(self):
+        port = CurvePort(self.csx, port_nr=1, R=50,
+                         start=[0, 0, -5], stop=[0, 0, 5])
+        self.assertEqual(len(port.U_filenames), 1)
+
+    def test_single_current_probe(self):
+        port = CurvePort(self.csx, port_nr=1, R=50,
+                         start=[0, 0, -5], stop=[0, 0, 5])
+        self.assertEqual(len(port.I_filenames), 1)
+
+    def test_port_direction_z(self):
+        port = CurvePort(self.csx, port_nr=1, R=50,
+                         start=[0, 0, -5], stop=[0, 0, 5])
+        self.assertEqual(port.port_dir, 2)
+
+    def test_port_direction_x(self):
+        port = CurvePort(self.csx, port_nr=1, R=50,
+                         start=[-50, 0, 0], stop=[50, 0, 0])
+        self.assertEqual(port.port_dir, 0)
+
+    def test_active_port_has_more_props(self):
+        passive = CurvePort(self.csx, port_nr=1, R=50,
+                            start=[0, 0, -5], stop=[0, 0, 5], excite=False)
+        active  = CurvePort(self.csx, port_nr=2, R=50,
+                            start=[0, 0, -5], stop=[0, 0, 5], excite=True)
+        self.assertGreater(len(active.port_props), len(passive.port_props))
+
+    def test_r_zero_short(self):
+        port = CurvePort(self.csx, port_nr=1, R=0,
+                         start=[0, 0, -5], stop=[0, 0, 5])
+        self.assertIsNotNone(port)
+
+    def test_r_inf_open(self):
+        port = CurvePort(self.csx, port_nr=1, R=np.inf,
+                         start=[0, 0, -5], stop=[0, 0, 5])
+        self.assertIsNotNone(port)
+
+    def test_multi_cell_port_constructs(self):
+        # Port spanning many cells - triggers PEC curve creation
+        port = CurvePort(self.csx, port_nr=1, R=50,
+                         start=[0, 0, -5], stop=[0, 0, 4], excite=False)
+        self.assertIsNotNone(port)
+
+    def test_port_number_in_probe_names(self):
+        port = CurvePort(self.csx, port_nr=6, R=50,
+                         start=[0, 0, -5], stop=[0, 0, 5])
+        self.assertIn('6', port.U_filenames[0])
+
+    def test_name_prefix(self):
+        port = CurvePort(self.csx, port_nr=1, R=50,
+                         start=[0, 0, -5], stop=[0, 0, 5],
+                         PortNamePrefix='cv_')
+        self.assertTrue(port.U_filenames[0].startswith('cv_'))
 
 
 if __name__ == '__main__':
