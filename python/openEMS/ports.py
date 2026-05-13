@@ -24,6 +24,29 @@ from openEMS import utilities
 
 from openEMS.physical_constants import *
 
+def _load_ui_file(filepath):
+    """Read an openEMS probe output file in a single pass.
+
+    Returns (data, col_names) where data is a float64 array of shape (N, ncols)
+    and col_names is the list of column-name strings from the last header line
+    (e.g. ['t/s', 'voltage', 'mode_purity']), or None if no header was found.
+    """
+    comments = []
+    rows = []
+    with open(filepath) as f:
+        for line in f:
+            if line.startswith('%'):
+                comments.append(line[1:].strip())
+            else:
+                s = line.strip()
+                if s:
+                    rows.append(s.split())
+    col_names = comments[-1].split() if comments else None
+    if col_names is not None and col_names[0] != 't/s':
+        raise ValueError('{}: unexpected first column "{}", expected "t/s"'.format(filepath, col_names[0]))
+    return np.array(rows, dtype=np.double), col_names
+
+
 class UI_data:
     def __init__(self, fns, path, freq, signal_type='pulse', **kw):
         self.path = path
@@ -35,15 +58,21 @@ class UI_data:
             freq = [freq]
         self.freq = freq
 
-        self.ui_time = []
-        self.ui_val  = []
-        self.ui_f_val = []
+        self.ui_time        = []
+        self.ui_val         = []
+        self.ui_f_val       = []
+        self.col_names      = []  # column names per file, from the file header
+        self.ui_mode_purity = []  # mode-purity time series or None
 
         for fn in fns:
-            tmp = np.loadtxt(os.path.join(path, fn),comments='%')
-            self.ui_time.append(tmp[:,0])
-            self.ui_val.append(tmp[:,1])
-            self.ui_f_val.append(utilities.DFT_time2freq(tmp[:,0], tmp[:,1], freq, signal_type=signal_type))
+            data, col_names = _load_ui_file(os.path.join(path, fn))
+            self.col_names.append(col_names)
+            self.ui_time.append(data[:, 0])
+            self.ui_val.append(data[:, 1])
+            self.ui_f_val.append(utilities.DFT_time2freq(data[:, 0], data[:, 1], freq, signal_type=signal_type))
+            has_purity = (col_names is not None and len(col_names) > 1
+                          and col_names[-1] == 'mode_purity')
+            self.ui_mode_purity.append(data[:, -1] if has_purity else None)
 
 # Port Base-Class
 class Port(object):
@@ -110,6 +139,10 @@ class Port(object):
         for n in range(len(self.i_data.fns)):
             self.if_tot += self.i_data.ui_f_val[n]
             self.it_tot += self.i_data.ui_val[n]
+
+        # mode purity: extra column written by ProcessModeMatch (index 0 = purity)
+        self.u_mode_purity = self.u_data.ui_mode_purity
+        self.i_mode_purity = self.i_data.ui_mode_purity
 
 
     def CalcPort(self, sim_path, freq, ref_impedance=None, ref_plane_shift=None, signal_type='pulse'):
@@ -342,13 +375,46 @@ class WaveguidePort(Port):
     """
     Base class for any waveguide port.
 
+    The mode shape can be supplied either as analytic expressions (E_WG_func /
+    H_WG_func) or as an HDF5 mode file (E_WG_file / H_WG_file).  Exactly one
+    of the two sources must be provided.
+
+    Parameters
+    ----------
+    exc_dir : int or str
+        Propagation direction of the waveguide (0/'x', 1/'y', 2/'z').
+    E_WG_func : list of str or None
+        Electric field mode profile as a list of three fparser expressions,
+        one per Cartesian component.  Use ``None`` when supplying a mode file.
+    H_WG_func : list of str or None
+        Magnetic field mode profile as a list of three fparser expressions.
+        Use ``None`` when supplying a mode file.
+    kc : float
+        Cut-off wavenumber of the mode in drawing units (e.g. pi/a for TE10).
+        Used by :meth:`CalcPort` to compute the propagation constant beta and
+        the analytic waveguide impedance.
+    E_WG_file : str or None
+        Path to an HDF5 file containing the electric field mode profile.
+        Required when E_WG_func / H_WG_func are ``None``.
+    H_WG_file : str or None
+        Path to an HDF5 file containing the magnetic field mode profile.
+        Required when E_WG_func / H_WG_func are ``None``.
+    local_origin : array-like, 'corner', 'center', or None
+        Coordinate origin used when evaluating mode functions or looking up
+        mode file data.  Coordinates are shifted by this amount before being
+        passed to the mode profile, so the profile can be defined relative to
+        a local origin rather than the global one.  Shorthands: ``'corner'``
+        resolves to ``min(start, stop)`` per axis; ``'center'`` resolves to
+        the midpoint.  Default ``None`` means no shift (global coordinates are
+        used as-is).
+
     See Also
     --------
     Port, RectWGPort
 
     """
-    def __init__(self, CSX, port_nr, start, stop, exc_dir, E_WG_func, H_WG_func, kc, excite=0, **kw):
-        super(WaveguidePort, self).__init__(CSX, port_nr=port_nr, start=start, stop=stop, excite=excite, **kw)
+    def __init__(self, CSX, port_nr, start, stop, exc_dir, E_WG_func, H_WG_func, kc, excite = 0, excite_type = 0, E_WG_file = None, H_WG_file = None, local_origin = None, **kw):
+        super(WaveguidePort, self).__init__(CSX, port_nr=port_nr, start=start, stop=stop, excite=excite, excite_type=excite_type, **kw)
         self.exc_ny  = CheckNyDir(exc_dir)
         self.ny_P  = (self.exc_ny+1)%3
         self.ny_PP = (self.exc_ny+2)%3
@@ -361,17 +427,65 @@ class WaveguidePort(Port):
         self.kc = kc
         self.E_func = E_WG_func
         self.H_func = H_WG_func
+        self.E_file = E_WG_file
+        self.H_file = H_WG_file
 
-        if excite!=0:
+        # Resolve local_origin shorthand into a coordinate array (or keep None)
+        if local_origin == 'corner':
+            local_origin = np.minimum(start, stop)
+        elif local_origin == 'center':
+            local_origin = 0.5 * (np.array(start) + np.array(stop))
+        elif local_origin is not None:
+            local_origin = np.array(local_origin, dtype=float)
+
+        use_function_expr = (self.E_func is not None) and (self.H_func is not None)
+
+        if excite != 0:
             e_start = np.array(start)
             e_stop  = np.array(stop)
             e_stop[self.exc_ny] = e_start[self.exc_ny]
             e_vec = np.ones(3)
-            e_vec[self.exc_ny]=0
-            exc = CSX.AddExcitation(self.lbl_temp.format('excite'), exc_type=0, exc_val=e_vec, delay=self.delay)
-            exc.SetWeightFunction([str(x) for x in self.E_func])
+            e_vec[self.exc_ny] = 0
+            exc = CSX.AddExcitation(self.lbl_temp.format('excite'), exc_type=excite_type, exc_val=e_vec, delay=self.delay)
+
+
+            if not use_function_expr:
+                if not ((type(self.E_file) is str) and (type(self.H_file) is str)):
+                    raise Exception('Both E_WG_file and H_WG_file must be strings (HDF5 file paths)')
+
+                # E-field (TE case)
+                if excite_type in [0,1]:
+                    exc.SetWeightFile(self.E_file)
+                # H-field (TM case)
+                elif excite_type in [2,3]:
+                    exc.SetWeightFile(self.H_file)
+                else:
+                    raise Exception('Unsupported excitation type. Only 0 or 2 for WaveguidePort')
+            else:
+                if not (type(self.E_func) is list):
+                    raise Exception('Unsupported input type for "E_WG_func" or "H_WG_func". Expected a list of strings')
+
+                if excite_type in [0,1]:
+                    exc.SetWeightFunction([str(x) for x in self.E_func])
+                elif excite_type in [2,3]:
+                    exc.SetWeightFunction([str(x) for x in self.H_func])
+                else:
+                    raise Exception('Unsupported excitation type. Only 0 or 2 for WaveguidePort')
+
+            # For the mode file to be used correctly, the direction of
+            # propagation has to be explicitly set.
+            if not use_function_expr:
+                dirVect = [0,0,0]
+                dirVect[self.exc_ny] = 1
+                exc.SetPropagationDir(dirVect)
+
+            if local_origin is not None:
+                exc.SetWeightOrigin(local_origin)
+
+            # Finally, add the box
             exc.AddBox(e_start, e_stop, priority=self.priority)
             self.port_props.append(exc)
+
 
         # voltage/current planes
         m_start = np.array(start)
@@ -380,37 +494,64 @@ class WaveguidePort(Port):
         self.measplane_shift = np.abs(stop[self.exc_ny] - start[self.exc_ny])
 
         self.U_filenames = [self.lbl_temp.format('ut'), ]
-
-        u_probe = CSX.AddProbe(self.U_filenames[0], p_type=10, mode_function=self.E_func)
+        u_probe_kw = {'mode_function': self.E_func} if use_function_expr else {}
+        u_probe = CSX.AddProbe(self.U_filenames[0], p_type=10, **u_probe_kw)
+        if not use_function_expr:
+            u_probe.SetModeFile(self.E_file)
+        if local_origin is not None:
+            u_probe.SetModeOrigin(local_origin)
         u_probe.AddBox(m_start, m_stop)
         self.port_props.append(u_probe)
 
         self.I_filenames = [self.lbl_temp.format('it'), ]
-        i_probe = CSX.AddProbe(self.I_filenames[0], p_type=11, weight=self.direction, mode_function=self.H_func)
+        i_probe_kw = {'mode_function': self.H_func} if use_function_expr else {}
+        i_probe = CSX.AddProbe(self.I_filenames[0], p_type=11, weight=self.direction, **i_probe_kw)
+        if not use_function_expr:
+            i_probe.SetModeFile(self.H_file)
+        if local_origin is not None:
+            i_probe.SetModeOrigin(local_origin)
         i_probe.AddBox(m_start, m_stop)
         self.port_props.append(i_probe)
 
-
-    def CalcPort(self, sim_path, freq, ref_impedance=None, ref_plane_shift=None, signal_type='pulse'):
+    def CalcPort(self, sim_path, freq, ref_impedance=None, ref_plane_shift=None, signal_type='pulse', ZL = -1):
         k = 2.0*np.pi*freq/C0*self.ref_index
         self.beta = np.sqrt(k**2 - self.kc**2)
-        self.ZL = k * Z0 / self.beta    #analytic waveguide impedance
+        if ZL <= 0:
+            self.ZL = k * Z0 / self.beta    #analytic waveguide impedance
+        else:
+            self.ZL = ZL
         if ref_impedance is None:
             self.Z_ref = self.ZL
         super(WaveguidePort, self).CalcPort(sim_path, freq, ref_impedance, ref_plane_shift, signal_type)
 
 class RectWGPort(WaveguidePort):
     """
-    Rectangular waveguide port.
+    Rectangular waveguide port with automatic TE mode profile generation.
 
-    :param a,b: float -- Width/Height of rectangular waveguide port
+    Constructs the analytic TE_mn mode functions (Pozar, Microwave Engineering)
+    and forwards them to :class:`WaveguidePort`.  Only TE modes are currently
+    supported.
+
+    Parameters
+    ----------
+    a : float
+        Waveguide width in metres (dimension along the first transverse axis).
+    b : float
+        Waveguide height in metres (dimension along the second transverse axis).
+    mode_name : str
+        Four-character mode string, e.g. ``'TE10'`` or ``'TE11'``.
+    local_origin : array-like, 'corner', 'center', or None
+        Defaults to ``'corner'`` so that the generated mode functions, which
+        are defined relative to the lower-left corner of the port, are
+        evaluated correctly regardless of where the port is placed in the mesh.
+        See :class:`WaveguidePort` for the full description.
 
     See Also
     --------
     Port, WaveguidePort
 
     """
-    def __init__(self, CSX, port_nr, start, stop, exc_dir, a, b, mode_name, excite=0, **kw):
+    def __init__(self, CSX, port_nr, start, stop, exc_dir, a, b, mode_name, excite=0, local_origin='corner', **kw):
         Port.__init__(self, CSX, port_nr, start, stop, excite=0, **kw)
         self.exc_ny  = CheckNyDir(exc_dir)
         self.ny_P  = (self.exc_ny+1)%3
@@ -438,8 +579,8 @@ class RectWGPort(WaveguidePort):
         b = self.WG_size[1]
 
         xyz = 'xyz'
-        name_P = '({}-{})'.format(xyz[self.ny_P], self.start[self.ny_P])
-        name_PP = '({}-{})'.format(xyz[self.ny_PP], self.start[self.ny_PP])
+        name_P  = xyz[self.ny_P]
+        name_PP = xyz[self.ny_PP]
 
         kc = np.sqrt((self.M*np.pi/a)**2 + (self.N*np.pi/b)**2)
 
@@ -457,5 +598,5 @@ class RectWGPort(WaveguidePort):
         if self.N>0:
             H_func[self.ny_PP] = '{}*cos({}*{})*sin({}*{})'.format(self.N/b, self.M*np.pi/a, name_P, self.N*np.pi/b, name_PP)
 
-        super(RectWGPort, self).__init__(CSX, port_nr=port_nr, start=start, stop=stop, exc_dir=exc_dir, E_WG_func=E_func, H_WG_func=H_func, kc=kc, excite=excite, **kw)
+        super(RectWGPort, self).__init__(CSX, port_nr=port_nr, start=start, stop=stop, exc_dir=exc_dir, E_WG_func=E_func, H_WG_func=H_func, kc=kc, excite=excite, local_origin=local_origin, **kw)
 

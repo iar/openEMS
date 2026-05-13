@@ -1,10 +1,11 @@
 function [CSX,port] = AddWaveGuidePort( CSX, prio, portnr, start, stop, dir, E_WG_func, H_WG_func, kc, exc_amp, varargin )
 % function [CSX,port] = AddWaveGuidePort( CSX, prio, portnr, start, stop, dir, E_WG_func, H_WG_func, kc, exc_amp, varargin )
-% 
+%
 % Create a waveguide port, including an optional excitation and probes
-% 
+%
 % Note: - The excitation will be located at the start position in the given direction
 %       - The voltage and current probes at the stop position in the given direction
+%       - Only TE modes are currently supported in MATLAB/Octave
 %
 % parameter:
 % - CSX:        complete CSX structure (must contain a mesh)
@@ -20,6 +21,12 @@ function [CSX,port] = AddWaveGuidePort( CSX, prio, portnr, start, stop, dir, E_W
 % optional (key/values):
 % - varargin:   optional additional excitations options, see also AddExcitation
 % - 'PortNamePrefix': a prefix to the port name
+% - 'E_WG_file': Name (and path) of the E-field mode file
+% - 'H_WG_file': Name (and path) of the H-field mode file
+% - 'local_origin': Local coordinate origin for mode/function evaluation.
+%                   Either a 3-element vector [x,y,z], 'corner' (min of
+%                   start/stop per axis) or 'center' (midpoint). Default: no
+%                   shift (global coordinates are passed unchanged).
 %
 % output:
 % - CSX:        modified CSX structure
@@ -49,6 +56,7 @@ function [CSX,port] = AddWaveGuidePort( CSX, prio, portnr, start, stop, dir, E_W
 % openEMS matlab interface
 % -----------------------
 % (c) 2013 Thorsten Liebig (thorsten.liebig@gmx.de)
+% (c) 2023-2025 Gadi Lahav (gadi@rfwithcare.com)
 %
 % See also InitCSX, AddExcitation, calcWGPort, calcPort
 
@@ -66,14 +74,36 @@ port.dir = dir;
 port.drawingunit = CSX.RectilinearGrid.ATTRIBUTE.DeltaUnit;
 
 PortNamePrefix = '';
+E_WG_file = '';
+H_WG_file = '';
+LocalOrigin = [];   % empty = no shift
 
-varargin_tmp  = varargin;
+varargin_tmp = varargin;
+idxsToDelete = [];
 for n=1:2:numel(varargin_tmp)
     if strcmpi('PortNamePrefix',varargin_tmp{n})
         PortNamePrefix = varargin_tmp{n+1};
-        varargin([n n+1]) = [];
+        idxsToDelete = [idxsToDelete n n+1];
+    end
+
+    if strcmpi('E_WG_file',varargin_tmp{n})
+        E_WG_file = varargin_tmp{n+1};
+        idxsToDelete = [idxsToDelete n n+1];
+    end
+
+    if strcmpi('H_WG_file',varargin_tmp{n})
+        H_WG_file = varargin_tmp{n+1};
+        idxsToDelete = [idxsToDelete n n+1];
+    end
+
+    if strcmpi('local_origin',varargin_tmp{n})
+        LocalOrigin = varargin_tmp{n+1};
+        idxsToDelete = [idxsToDelete n n+1];
     end
 end
+
+% Delete all used entries
+varargin(idxsToDelete) = [];
 
 % matlab addressing
 dir = dir + 1;
@@ -83,6 +113,26 @@ if (dir_sign==0)
 end
 
 port.direction = dir_sign;
+
+% Resolve LocalOrigin shorthand
+if ischar(LocalOrigin)
+    if strcmpi(LocalOrigin, 'corner')
+        LocalOrigin = min(start, stop);
+    elseif strcmpi(LocalOrigin, 'center')
+        LocalOrigin = 0.5 * (start + stop);
+    else
+        error('AddWaveGuidePort: unknown local_origin value "%s"; use ''corner'', ''center'' or a [x,y,z] vector', LocalOrigin);
+    end
+end
+% After this point: LocalOrigin is either [] (no shift) or a 3-element vector.
+
+% Verify there is contents in the waveguide mode functions
+modeFuncIsString = (~isempty(E_WG_func) & ~isempty(H_WG_func));
+modeFuncIsFile = ischar(E_WG_file) & ischar(H_WG_file);
+% Sanity check - Both are invalid
+if ~modeFuncIsString && ~modeFuncIsFile
+    error('No mode function source was defined');
+end
 
 E_WG_func{dir} = 0;
 H_WG_func{dir} = 0;
@@ -99,10 +149,16 @@ if (exc_amp~=0)
     port.excitepos = e_start(dir);
     e_vec = [1 1 1]*exc_amp;
     e_vec(dir) = 0;
+    e_propDir = [0 0 0];
+    e_propDir(dir) = 1;
     exc_name = [PortNamePrefix 'port_excite_' num2str(portnr)];
     CSX = AddExcitation( CSX, exc_name, 0, e_vec, varargin{:});
-    CSX = SetExcitationWeight(CSX, exc_name, E_WG_func );
-	CSX = AddBox( CSX, exc_name, prio, e_start, e_stop);
+    if modeFuncIsString
+        CSX = SetExcitationWeight(CSX, exc_name, E_WG_func, LocalOrigin);
+    else
+        CSX = SetExcitationWeightFile(CSX, exc_name, E_WG_file, e_propDir, LocalOrigin);
+    end
+    CSX = AddBox( CSX, exc_name, prio, e_start, e_stop);
 end
 
 % voltage/current planes
@@ -112,9 +168,21 @@ m_start(dir) = stop(dir);
 
 port.measplanepos = m_start(dir);
 port.U_filename = [PortNamePrefix 'port_ut' int2str(portnr)];
-CSX = AddProbe(CSX, port.U_filename, 10, 'ModeFunction', E_WG_func);
+origin_arg = {};
+if ~isempty(LocalOrigin)
+    origin_arg = {'ModeOrigin', LocalOrigin};
+end
+if modeFuncIsString
+    CSX = AddProbe(CSX, port.U_filename, 10, 'ModeFunction', E_WG_func, origin_arg{:});
+else
+    CSX = AddProbe(CSX, port.U_filename, 10, 'ModeFile', E_WG_file, origin_arg{:});
+end
 CSX = AddBox(CSX, port.U_filename, 0 ,m_start, m_stop);
 
 port.I_filename = [PortNamePrefix 'port_it' int2str(portnr)];
-CSX = AddProbe(CSX, port.I_filename, 11, 'ModeFunction', H_WG_func, 'weight', dir_sign);
+if modeFuncIsString
+    CSX = AddProbe(CSX, port.I_filename, 11, 'ModeFunction', H_WG_func, 'weight', dir_sign, origin_arg{:});
+else
+    CSX = AddProbe(CSX, port.I_filename, 11, 'ModeFile', H_WG_file, 'weight', dir_sign, origin_arg{:});
+end
 CSX = AddBox(CSX, port.I_filename, 0 ,m_start, m_stop);

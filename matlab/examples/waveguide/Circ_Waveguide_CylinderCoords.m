@@ -110,16 +110,16 @@ CSX = AddBox(CSX,'Ht',0 , start,stop);
 %% define voltage calc boxes %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 start = [mesh.x(1)   mesh.y(1)   mesh.z(10)];
 stop  = [mesh.x(end) mesh.y(end) mesh.z(10)];
-CSX = AddProbe(CSX, 'ut1', 10, 1, [], 'ModeFunction',{func_Er,func_Ea,0});
+CSX = AddProbe(CSX, 'ut1', 10, 'ModeFunction',{func_Er,func_Ea,0});
 CSX = AddBox(CSX,  'ut1',  0 ,start,stop);
-CSX = AddProbe(CSX,'it1', 11, 1, [], 'ModeFunction',{func_Hr,func_Ha,0});
+CSX = AddProbe(CSX,'it1', 11, 'ModeFunction',{func_Hr,func_Ha,0});
 CSX = AddBox(CSX,'it1', 0 ,start,stop);
     
 start = [mesh.x(1)   mesh.y(1)   mesh.z(end-10)];
 stop  = [mesh.x(end) mesh.y(end) mesh.z(end-10)];
-CSX = AddProbe(CSX, 'ut2', 10, 1, [], 'ModeFunction',{func_Er,func_Ea,0});
+CSX = AddProbe(CSX, 'ut2', 10, 'ModeFunction',{func_Er,func_Ea,0});
 CSX = AddBox(CSX,  'ut2',  0 ,start,stop);
-CSX = AddProbe(CSX,'it2', 11, 1, [], 'ModeFunction',{func_Hr,func_Ha,0});
+CSX = AddProbe(CSX,'it2', 11, 'ModeFunction',{func_Hr,func_Ha,0});
 CSX = AddBox(CSX,'it2', 0 ,start,stop);
 
 port_dist = mesh.z(end-10) - mesh.z(10);

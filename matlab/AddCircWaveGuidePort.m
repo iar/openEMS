@@ -20,6 +20,9 @@ function [CSX,port] = AddCircWaveGuidePort( CSX, prio, portnr, start, stop, radi
 % optional (key/values):
 % * varargin:   optional additional excitations options, see also AddExcitation
 % * 'PortNamePrefix': a prefix to the port name
+% * 'local_origin': origin for mode function evaluation (default: 'center',
+%                   i.e. the midpoint of start/stop). The cylindrical mode
+%                   functions (rho, a) are evaluated relative to this point.
 %
 % output:
 % * CSX:        modified CSX structure
@@ -107,5 +110,5 @@ else
     func_H = {func_Hx, func_Hy, 0};
 end
 
-[CSX,port] = AddWaveGuidePort( CSX, prio, portnr, start, stop, 2, func_E, func_H, kc, exc_amp, varargin{:} );
+[CSX,port] = AddWaveGuidePort( CSX, prio, portnr, start, stop, 2, func_E, func_H, kc, exc_amp, 'local_origin', 'center', varargin{:} );
 

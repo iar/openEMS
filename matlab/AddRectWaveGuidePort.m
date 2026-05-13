@@ -19,6 +19,10 @@ function [CSX,port] = AddRectWaveGuidePort( CSX, prio, portnr, start, stop, dir,
 % optional (key/values):
 % - varargin:   optional additional excitations options, see also AddExcitation
 % - 'PortNamePrefix': a prefix to the port name
+% - 'local_origin': origin for mode function evaluation (default: 'corner',
+%                   i.e. the per-axis minimum of start/stop). Override only
+%                   if the waveguide cross-section does not start at x=0, y=0
+%                   in the transverse plane and the default corner is wrong.
 %
 % output:
 % - CSX:        modified CSX structure
@@ -65,8 +69,8 @@ dir_names={'x','y','z'};
 
 dirP = mod((dir+1),3)+1;
 dirPP = mod((dir+2),3)+1;
-nameX = ['(' dir_names{dirP}  '-' num2str(start(dirP)) ')'];
-nameY = ['(' dir_names{dirPP} '-' num2str(start(dirPP)) ')'];
+nameX = dir_names{dirP};
+nameY = dir_names{dirPP};
 
 %convert a&b to drawing units
 a = a/unit;
@@ -89,5 +93,5 @@ func_H{dir+1} = 0;
 func_H{dirP} = func_Hx;
 func_H{dirPP} = func_Hy;
 
-[CSX,port] = AddWaveGuidePort( CSX, prio, portnr, start, stop, dir, func_E, func_H, kc, exc_amp, varargin{:} );
+[CSX,port] = AddWaveGuidePort( CSX, prio, portnr, start, stop, dir, func_E, func_H, kc, exc_amp, 'local_origin', 'corner', varargin{:} );
 

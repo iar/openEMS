@@ -57,19 +57,24 @@ if isOctave()
                 if ~isempty(fn_h),  [hdf5inc_dir, ~, ~] = fileparts(fn_h);  end
             end
         end
+        oct_files = {'h5readatt_octave.cc', 'h5writemode_octave.cc'};
         try
             if ~isempty(hdf5lib_dir) && ~isempty(hdf5inc_dir)
                 disp(["HDF5 library path found at: " hdf5lib_dir])
                 disp(["HDF5 include path found at: " hdf5inc_dir])
-                mkoctfile("h5readatt_octave.cc", ["-L" hdf5lib_dir], ["-I" hdf5inc_dir], "-lhdf5")
-            else
-                mkoctfile -lhdf5 h5readatt_octave.cc
+            end
+            for k = 1:numel(oct_files)
+                if ~isempty(hdf5lib_dir) && ~isempty(hdf5inc_dir)
+                    mkoctfile(oct_files{k}, ["-L" hdf5lib_dir], ["-I" hdf5inc_dir], "-lhdf5")
+                else
+                    mkoctfile('-lhdf5', oct_files{k})
+                end
             end
         catch e
             % Distinguish "mkoctfile binary missing" from a real compile error
             % so the user gets an actionable install hint in the former case.
             if ~isempty(strfind(e.message, 'unable to find the mkoctfile'))
-                error(['mkoctfile not found - cannot compile h5readatt_octave.\n' ...
+                error(['mkoctfile not found - cannot compile oct files.\n' ...
                        'Install the Octave development package for your distro:\n' ...
                        '  Fedora/RHEL/AlmaLinux/CentOS: octave-devel\n' ...
                        '  Debian/Ubuntu:                octave-dev (>= Bookworm) or liboctave-dev\n' ...
@@ -78,7 +83,10 @@ if isOctave()
             rethrow(e);
         end
     else
-        mkoctfile -lhdf5 h5readatt_octave.cc
+        oct_files = {'h5readatt_octave.cc', 'h5writemode_octave.cc'};
+        for k = 1:numel(oct_files)
+            mkoctfile('-lhdf5', oct_files{k})
+        end
     end
 else
     disp('Matlab does not need this function. It is Octave only.')

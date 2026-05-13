@@ -9,6 +9,7 @@ Makefile*
 *~
 *.so*
 *.a
+*.oct
 *.pro.user*
 *.user
 *.orig
@@ -25,6 +26,7 @@ localConfig.cmake
 #python
 *.pyc
 *.pyo
+python/openEMS/__fallback_version__.py
 python/**/*.cpp
 python/openEMS.egg-info/*
 python/dist
