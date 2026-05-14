@@ -493,8 +493,8 @@ bool SAR_Calculation::WriteToHDF5(HDF5_File_Writer &out_file, bool legacyHDF5)
 			cerr << "SAR_Calculation::WriteToHDF5: can't dump to file...! " << endl;
 	}
 
-	out_file.WriteAtrribute("/FieldData/FD","valid_cubes",m_Used);
-	out_file.WriteAtrribute("/FieldData/FD","used_cubes",m_Valid);
+	out_file.WriteAtrribute("/FieldData/FD","valid_cubes",m_Valid);
+	out_file.WriteAtrribute("/FieldData/FD","used_cubes",m_Used);
 	out_file.WriteAtrribute("/FieldData/FD","unused_cubes",m_Unused);
 	out_file.WriteAtrribute("/FieldData/FD","air_cubes",m_AirVoxel);
 
@@ -921,6 +921,8 @@ void SAR_Calculation::CalcCubicalSAR(double* vx_sar, unsigned int start[3], unsi
 			}
 		}
 	}
+	if (mass==0)
+		return;
 	for (size_t n=0;n<N;++n)
 		vx_sar[n] /= mass;
 }
@@ -1245,7 +1247,7 @@ bool SAR_Calculation::CalcAveragedSAR(unsigned int numThreads)
 
 	unsigned int out_num_lines[3] = {(unsigned int)m_cellIndicies[0].size(),(unsigned int)m_cellIndicies[1].size(),(unsigned int)m_cellIndicies[2].size()};
 	ArrayLib::ArrayIJK<bool> Vx_Used("vx_used", out_num_lines);
-	ArrayLib::ArrayIJK<bool> Vx_Valid("vx_used", out_num_lines);
+	ArrayLib::ArrayIJK<bool> Vx_Valid("vx_valid", out_num_lines);
 
 	if (numThreads==0)
 		numThreads = std::thread::hardware_concurrency();
