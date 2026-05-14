@@ -613,8 +613,9 @@ class CircWGPort(WaveguidePort):
     Parameters
     ----------
     exc_dir : int or str
-        Propagation direction (0/1/2 or 'x'/'y'/'z').  Must be 2 ('z') for
-        the Bessel-function aperture to be oriented correctly.
+        Propagation direction: 0/'x', 1/'y', or 2/'z'.  The mode functions
+        are expressed in the two transverse Cartesian coordinates, so all
+        three directions are supported.
     radius : float
         Waveguide radius in metres.
     mode_name : str
@@ -632,6 +633,12 @@ class CircWGPort(WaveguidePort):
       TE01 3.832  TE11 1.841  TE21 3.054
       TE02 7.016  TE12 5.331  TE22 6.706
       TE03 10.174 TE13 8.536  TE23 9.970
+
+    For each propagation direction the two transverse Cartesian coordinates
+    (u, v) are determined by ``ny_P = (exc_ny+1)%3`` and
+    ``ny_PP = (exc_ny+2)%3``.  The transverse radius and angle are then
+    ``rho_t = sqrt(u²+v²)`` and ``a_t = atan2(v, u)``, which replace the
+    xy-plane built-ins ``rho`` and ``a`` used in earlier versions.
 
     See Also
     --------
@@ -660,31 +667,37 @@ class CircWGPort(WaveguidePort):
         kc      = pnm / radius       # cut-off wavenumber, 1/m
         kc_draw = kc * unit          # 1/drawing-unit (for fparser)
 
-        # Angular argument relative to polarisation angle
-        ang = 'a-{:.15g}'.format(pol_ang)
+        exc_ny = CheckNyDir(exc_dir)
+        ny_P   = (exc_ny + 1) % 3
+        ny_PP  = (exc_ny + 2) % 3
+
+        # Transverse cylindrical coordinates as fparser expressions for any propagation axis
+        coords = 'xyz'
+        u     = coords[ny_P]
+        v     = coords[ny_PP]
+        rho_t = 'sqrt({0}*{0}+{1}*{1})'.format(u, v)
+        a_t   = 'atan2({},{})'.format(v, u)
+        ang   = '({})-{:.15g}'.format(a_t, pol_ang)
 
         # Cylindrical E and H components (Pozar 3rd ed., TE_nm pattern n=1)
-        Er = '{:.15g}/rho*cos({})*j1({:.15g}*rho)'.format(-1.0/kc_draw**2, ang, kc_draw)
-        Ea = '{:.15g}*sin({})*0.5*(j0({:.15g}*rho)-jn(2,{:.15g}*rho))'.format(
-              1.0/kc_draw, ang, kc_draw, kc_draw)
+        c_r = -1.0 / kc_draw**2
+        c_a =  1.0 / kc_draw
+        Er = '{C:.15g}/({r})*cos({a})*j1({k:.15g}*({r}))'.format(C=c_r,  r=rho_t, a=ang, k=kc_draw)
+        Ea = '{C:.15g}*sin({a})*0.5*(j0({k:.15g}*({r}))-jn(2,{k:.15g}*({r})))'.format(C=c_a,  r=rho_t, a=ang, k=kc_draw)
+        Hr = '{C:.15g}*sin({a})*0.5*(j0({k:.15g}*({r}))-jn(2,{k:.15g}*({r})))'.format(C=-c_a, r=rho_t, a=ang, k=kc_draw)
+        Ha = '{C:.15g}/({r})*cos({a})*j1({k:.15g}*({r}))'.format(C=c_r,  r=rho_t, a=ang, k=kc_draw)
 
-        Hr = '{:.15g}*sin({})*0.5*(j0({:.15g}*rho)-jn(2,{:.15g}*rho))'.format(
-              -1.0/kc_draw, ang, kc_draw, kc_draw)
-        Ha = '{:.15g}/rho*cos({})*j1({:.15g}*rho)'.format(-1.0/kc_draw**2, ang, kc_draw)
-
-        # Cartesian form with circular aperture mask (rho < R in drawing units)
+        # Cartesian conversion: cos(a_t)=u/rho_t, sin(a_t)=v/rho_t; map to transverse axes
         r_draw = radius / unit
-        mask = '(rho<{:.15g})'.format(r_draw)
-        E_func = [
-            '({}*cos(a)-{}*sin(a))*{}'.format(Er, Ea, mask),
-            '({}*sin(a)+{}*cos(a))*{}'.format(Er, Ea, mask),
-            '0',
-        ]
-        H_func = [
-            '({}*cos(a)-{}*sin(a))*{}'.format(Hr, Ha, mask),
-            '({}*sin(a)+{}*cos(a))*{}'.format(Hr, Ha, mask),
-            '0',
-        ]
+        mask  = '(({r})<{d:.15g})'.format(r=rho_t, d=r_draw)
+        cos_a = '{}/({})'.format(u, rho_t)
+        sin_a = '{}/({})'.format(v, rho_t)
+        E_func = ['0', '0', '0']
+        H_func = ['0', '0', '0']
+        E_func[ny_P]  = '(({Er})*({ca})-({Ea})*({sa}))*{m}'.format(Er=Er, Ea=Ea, ca=cos_a, sa=sin_a, m=mask)
+        E_func[ny_PP] = '(({Er})*({sa})+({Ea})*({ca}))*{m}'.format(Er=Er, Ea=Ea, ca=cos_a, sa=sin_a, m=mask)
+        H_func[ny_P]  = '(({Hr})*({ca})-({Ha})*({sa}))*{m}'.format(Hr=Hr, Ha=Ha, ca=cos_a, sa=sin_a, m=mask)
+        H_func[ny_PP] = '(({Hr})*({sa})+({Ha})*({ca}))*{m}'.format(Hr=Hr, Ha=Ha, ca=cos_a, sa=sin_a, m=mask)
 
         super(CircWGPort, self).__init__(
             CSX, port_nr=port_nr, start=start, stop=stop,

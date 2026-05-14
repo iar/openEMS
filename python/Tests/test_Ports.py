@@ -47,6 +47,16 @@ def _make_csx_circ():
     return csx
 
 
+def _make_csx_circ_3d():
+    """Symmetric grid large enough for a 320 mm radius waveguide in any direction."""
+    csx = ContinuousStructure()
+    grid = csx.GetGrid()
+    grid.SetDeltaUnit(1e-3)
+    for ax in ('x', 'y', 'z'):
+        grid.SetLines(ax, np.linspace(-350, 350, 15))
+    return csx
+
+
 def _make_csx_coax():
     """Grid for a z-directed coaxial port (r_i=2, r_o=6, r_os=7 mm)."""
     csx = ContinuousStructure()
@@ -251,6 +261,35 @@ class Test_CircWGPort(unittest.TestCase):
                               start=[0, 0, 0], stop=[0, 0, 200],
                               exc_dir='z', radius=self.radius, mode_name=mode)
             self.assertAlmostEqual(port.kc, CircWGPort._pnm[(n, m)] / self.radius, places=6)
+
+    def test_x_direction(self):
+        csx = _make_csx_circ_3d()
+        port = CircWGPort(csx, port_nr=1,
+                          start=[0, 0, 0], stop=[200, 0, 0],
+                          exc_dir='x', radius=self.radius, mode_name='TE11')
+        self.assertAlmostEqual(port.kc, CircWGPort._pnm[(1, 1)] / self.radius, places=6)
+
+    def test_y_direction(self):
+        csx = _make_csx_circ_3d()
+        port = CircWGPort(csx, port_nr=1,
+                          start=[0, 0, 0], stop=[0, 200, 0],
+                          exc_dir='y', radius=self.radius, mode_name='TE11')
+        self.assertAlmostEqual(port.kc, CircWGPort._pnm[(1, 1)] / self.radius, places=6)
+
+    def test_mode_funcs_use_transverse_coords(self):
+        """E-field functions must reference the two transverse coordinates, not exc axis."""
+        stops = {'x': [200, 0, 0], 'y': [0, 200, 0], 'z': [0, 0, 200]}
+        transverse = {'x': ('y', 'z'), 'y': ('z', 'x'), 'z': ('x', 'y')}
+        for exc_dir in ('x', 'y', 'z'):
+            csx = _make_csx_circ_3d()
+            port = CircWGPort(csx, port_nr=1,
+                              start=[0, 0, 0], stop=stops[exc_dir],
+                              exc_dir=exc_dir, radius=self.radius, mode_name='TE11')
+            for func in port.E_func:
+                if func == '0':
+                    continue
+                for t in transverse[exc_dir]:
+                    self.assertIn(t, func, msg='coord {} missing in E_func for dir {}'.format(t, exc_dir))
 
 
 class Test_CoaxialPort(unittest.TestCase):
