@@ -330,6 +330,19 @@ cdef class openEMS:
                     grid.AddLine(n, stop[n])
         return port
 
+    def AddCurvePort(self, port_nr, R, start, stop, excite=0, **kw):
+        """ AddCurvePort(port_nr, R, start, stop, excite=0, **kw)
+
+        Add a curve (wire) port.
+
+        See Also
+        --------
+        openEMS.ports.CurvePort
+        """
+        if self.__CSX is None:
+            raise Exception('AddCurvePort: CSX is not set!')
+        return ports.CurvePort(self.__CSX, port_nr, R, start, stop, excite, **kw)
+
     def AddWaveGuidePort(self, port_nr, start, stop, p_dir, E_func = None, H_func = None, kc = 0.0, excite = 0, excite_type = 0, E_file = None, H_file = None, **kw):
         """ AddWaveGuidePort(self, port_nr, start, stop, p_dir, E_func = None, H_func = None, kc = 0.0, excite = 0, excite_type = 0, E_file = None, H_file = None, **kw)
 
@@ -356,6 +369,32 @@ cdef class openEMS:
             raise Exception('AddRectWaveGuidePort: CSX is not set!')
         return ports.RectWGPort(self.__CSX, port_nr, start, stop, p_dir, a, b, mode_name, excite, **kw)
 
+    def AddCircWaveGuidePort(self, port_nr, start, stop, exc_dir, radius, mode_name, pol_ang=0, excite=0, **kw):
+        """ AddCircWaveGuidePort(port_nr, start, stop, exc_dir, radius, mode_name, pol_ang=0, excite=0, **kw)
+
+        Add a circular waveguide port.
+
+        See Also
+        --------
+        openEMS.ports.CircWGPort
+        """
+        if self.__CSX is None:
+            raise Exception('AddCircWaveGuidePort: CSX is not set!')
+        return ports.CircWGPort(self.__CSX, port_nr, start, stop, exc_dir, radius, mode_name, pol_ang, excite, **kw)
+
+    def AddCoaxialPort(self, port_nr, pec_prop, mat_prop, start, stop, prop_dir, r_i, r_o, r_os, excite_amp=0, **kw):
+        """ AddCoaxialPort(port_nr, pec_prop, mat_prop, start, stop, prop_dir, r_i, r_o, r_os, excite_amp=0, **kw)
+
+        Add a coaxial port.
+
+        See Also
+        --------
+        openEMS.ports.CoaxialPort
+        """
+        if self.__CSX is None:
+            raise Exception('AddCoaxialPort: CSX is not set!')
+        return ports.CoaxialPort(self.__CSX, port_nr, pec_prop, mat_prop, start, stop, prop_dir, r_i, r_o, r_os, excite_amp, **kw)
+
     def AddMSLPort(self, port_nr, metal_prop, start, stop, prop_dir, exc_dir, excite=0, **kw):
         """ AddMSLPort(port_nr, metal_prop, start, stop, prop_dir, exc_dir, excite=0, **kw)
 
@@ -368,6 +407,32 @@ cdef class openEMS:
         if self.__CSX is None:
             raise Exception('AddMSLPort: CSX is not set!')
         return ports.MSLPort(self.__CSX, port_nr, metal_prop, start, stop, prop_dir, exc_dir, excite, **kw)
+
+    def AddStripLinePort(self, port_nr, metal_prop, start, stop, prop_dir, exc_dir, height, excite=0, **kw):
+        """ AddStripLinePort(port_nr, metal_prop, start, stop, prop_dir, exc_dir, height, excite=0, **kw)
+
+        Add a stripline port.
+
+        See Also
+        --------
+        openEMS.ports.StripLinePort
+        """
+        if self.__CSX is None:
+            raise Exception('AddStripLinePort: CSX is not set!')
+        return ports.StripLinePort(self.__CSX, port_nr, metal_prop, start, stop, prop_dir, exc_dir, height, excite, **kw)
+
+    def AddCPWPort(self, port_nr, metal_prop, start, stop, prop_dir, exc_dir, gap_width, excite=0, **kw):
+        """ AddCPWPort(port_nr, metal_prop, start, stop, prop_dir, exc_dir, gap_width, excite=0, **kw)
+
+        Add a coplanar waveguide port.
+
+        See Also
+        --------
+        openEMS.ports.CPWPort
+        """
+        if self.__CSX is None:
+            raise Exception('AddCPWPort: CSX is not set!')
+        return ports.CPWPort(self.__CSX, port_nr, metal_prop, start, stop, prop_dir, exc_dir, gap_width, excite, **kw)
 
     def CreateNF2FFBox(self, name='nf2ff', start=None, stop=None, **kw):
         """ CreateNF2FFBox(name='nf2ff', start=None, stop=None, **kw)
