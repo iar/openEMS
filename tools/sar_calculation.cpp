@@ -1146,6 +1146,10 @@ bool SAR_Calculation::CalcAvgStep2SAR(ArrayLib::ArrayIJK<bool> &Vx_Valid, ArrayL
 	for (int n=0;n<6;++n)
 		vx_sar_unused[n] = new double[N];
 
+	// thread-local max SAR tracking — merged under mutex at end
+	std::vector<double> local_maxSAR(N, 0.0);
+	std::vector<std::array<unsigned int,3>> local_maxSAR_Idx(N, {0u,0u,0u});
+
 	size_t next_id = 0;
 	size_t xy_size = m_cellIndicies[0].size() * m_cellIndicies[1].size();
 	unsigned int i,j;
@@ -1211,10 +1215,10 @@ bool SAR_Calculation::CalcAvgStep2SAR(ArrayLib::ArrayIJK<bool> &Vx_Valid, ArrayL
 						{
 							if (vx_sar_unused[n][m]>m_SAR.at(m)->data(out_loc))
 							{
-								if (vx_sar_unused[n][m]>m_maxSAR.at(m))
+								if (vx_sar_unused[n][m]>local_maxSAR.at(m))
 								{
-									m_maxSAR.at(m) = vx_sar_unused[n][m];
-									m_maxSAR_Idx.at(m) = {i,j,k};
+									local_maxSAR.at(m) = vx_sar_unused[n][m];
+									local_maxSAR_Idx.at(m) = {i,j,k};
 								}
 								m_SAR.at(m)->data(out_loc) = vx_sar_unused[n][m];
 								if (vx_cube_type!=NULL)
@@ -1243,6 +1247,14 @@ bool SAR_Calculation::CalcAvgStep2SAR(ArrayLib::ArrayIJK<bool> &Vx_Valid, ArrayL
 	{
 		std::lock_guard<std::mutex> lock(m_resultMutex);
 		m_Unused += unused;
+		for (size_t n=0;n<N;++n)
+		{
+			if (local_maxSAR.at(n)>m_maxSAR.at(n))
+			{
+				m_maxSAR.at(n) = local_maxSAR.at(n);
+				m_maxSAR_Idx.at(n) = local_maxSAR_Idx.at(n);
+			}
+		}
 	}
 
 	return true;

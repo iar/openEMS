@@ -861,8 +861,6 @@ bool HDF5_File_Reader::ReadVectorDataSet(std::string ds_name, ArrayLib::ArrayNIJ
 
 	delete[] dims;
 	return ok;
-
-	return false;
 }
 
 // Explicit template instantiation

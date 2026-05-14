@@ -29,7 +29,7 @@ cdef extern from "openEMS/sar_calculation.h":
         bool SetAveragingMethod(string method, bool silent)
         void EnableCubeStats()
         void EnableAutoRange(double dBmax)
-        bool CalcFromHDF5(string h5_fn, string out_name) nogil
+        bool CalcFromHDF5(string h5_fn, string out_name, bool legacyHDF5, unsigned int numThreads) nogil
 
 
 cdef class SAR_Calculation:

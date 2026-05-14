@@ -60,14 +60,15 @@ cdef class SAR_Calculation:
     def EnableCubeStats(self):
         self.thisptr.EnableCubeStats()
 
-    def CalcFromHDF5(self, h5_fn, out_name, export_cube_stats=False):
+    def CalcFromHDF5(self, h5_fn, out_name, export_cube_stats=False, numThreads=0):
         if not os.path.exists(h5_fn):
             raise Exception('File "{}" does not exist'.format(h5_fn))
         cdef string in_fn = h5_fn.encode('UTF-8')
         cdef string out_fn = out_name.encode('UTF-8')
+        cdef unsigned int c_numThreads = numThreads
         if export_cube_stats:
             self.EnableCubeStats()
         with nogil:
-            ok = self.thisptr.CalcFromHDF5(in_fn, out_fn)
+            ok = self.thisptr.CalcFromHDF5(in_fn, out_fn, False, c_numThreads)
         return ok
 
