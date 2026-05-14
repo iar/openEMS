@@ -95,9 +95,9 @@ void ProcessFieldsSAR::InitProcess()
 	//create data structures...
 	for (size_t n = 0; n<m_FD_Samples.size(); ++n)
 	{
-		m_E_FD_Fields.push_back(new ArrayLib::ArrayNIJK<std::complex<float>>("E_FD", numLines)); //Create_N_3DArray<std::complex<float> >(numLines));
+		m_E_FD_Fields.push_back(new ArrayLib::ArrayNIJK<std::complex<float>>("E_FD", numLines));
 		if (!m_UseCellKappa)
-			m_J_FD_Fields.push_back(new ArrayLib::ArrayNIJK<std::complex<float>>("J_FD", numLines)); //Create_N_3DArray<std::complex<float> >(numLines));
+			m_J_FD_Fields.push_back(new ArrayLib::ArrayNIJK<std::complex<float>>("J_FD", numLines));
 	}
 }
 
@@ -147,8 +147,8 @@ int ProcessFieldsSAR::Process()
 			std::complex<float> exp_jwt_2_dt = std::exp( (std::complex<float>)(-2.0 * _I * M_PI * m_FD_Samples.at(n) * T) );
 			exp_jwt_2_dt *= 2; // *2 for single-sided spectrum
 			exp_jwt_2_dt *= Op->GetTimestep() * m_FD_Interval; // multiply with timestep-interval
-			N = m_E_FD_Fields.at(n)->size();
-			field_fd = m_E_FD_Fields.at(n)->data();
+			N = m_J_FD_Fields.at(n)->size();
+			field_fd = m_J_FD_Fields.at(n)->data();
 			for (unsigned int ijk=0;ijk<N;++ijk)
 				field_fd[ijk] += field_td[ijk] * exp_jwt_2_dt;
 		}
@@ -198,7 +198,6 @@ void ProcessFieldsSAR::DumpFDData()
 
 				Op->GetCellCenterMaterialAvgCoord(orig_pos, coord);
 				prop = CSX->GetPropertyByCoordPriority(coord, vPrims);
-//				prop = CSX->GetPropertyByCoordPriority(coord,CSProperties::MATERIAL);
 				if (prop!=0)
 				{
 					matProp = dynamic_cast<CSPropMaterial*>(prop);
@@ -295,7 +294,7 @@ void ProcessFieldsSAR::DumpFDData()
 		}
 		else if (m_fileType==HDF5_FILETYPE)
 		{
-			if (SAR_Calc.WriteToHDF5(*m_HDF5_Dump_File, g_settings.GetLegacyHFD5Dumps())==false)
+			if (SAR_Calc.WriteToHDF5(*m_HDF5_Dump_File, g_settings.GetLegacyHDF5Dumps())==false)
 				cerr << "ProcessFieldsSAR::DumpFDData: can't dump to file...! " << endl;
 		}
 		else

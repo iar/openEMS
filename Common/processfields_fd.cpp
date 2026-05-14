@@ -132,7 +132,7 @@ void ProcessFieldsFD::DumpFDData()
 				angle = 2.0 * M_PI * p / Nr_Ph;
 				std::complex<float> exp_jwt = std::exp( (std::complex<float>)( _I * angle) );
 				for (unsigned int ijk=0;ijk<N;++ijk)
-					field[ijk] += real(field_fd[ijk] * exp_jwt);
+					field[ijk] = real(field_fd[ijk] * exp_jwt);
 
 				stringstream ss;
 				ss << m_filename << fixed << "_f=" << str_freq << "_p=" << std::setw( 3 ) << std::setfill( '0' ) <<(int)(angle * 180 / M_PI);
@@ -147,7 +147,7 @@ void ProcessFieldsFD::DumpFDData()
 			{
 				//dump magnitude to vtk-files
 				for (unsigned int ijk=0;ijk<N;++ijk)
-					field[ijk] += abs(field_fd[ijk]);
+					field[ijk] = abs(field_fd[ijk]);
 
 				stringstream ss;
 				ss << m_filename << fixed << "_f=" << str_freq << "_abs";
@@ -161,7 +161,7 @@ void ProcessFieldsFD::DumpFDData()
 			{
 				//dump phase to vtk-files
 				for (unsigned int ijk=0;ijk<N;++ijk)
-					field[ijk] += arg(field_fd[ijk]);
+					field[ijk] = arg(field_fd[ijk]);
 
 				stringstream ss;
 				ss << m_filename << fixed << "_f=" << str_freq << "_arg";
@@ -182,10 +182,10 @@ void ProcessFieldsFD::DumpFDData()
 			stringstream ss;
 			ss << "f" << n;
 			// size_t datasize[]={numLines[0],numLines[1],numLines[2]};
-			if (m_HDF5_Dump_File->WriteVectorField<std::complex<float>>(ss.str(), *m_FD_Fields.at(n), g_settings.GetLegacyHFD5Dumps())==false)
+			if (m_HDF5_Dump_File->WriteVectorField<std::complex<float>>(ss.str(), *m_FD_Fields.at(n), g_settings.GetLegacyHDF5Dumps())==false)
 				cerr << "ProcessFieldsFD::Process: can't dump to file...! " << endl;
 
-			if (g_settings.GetLegacyHFD5Dumps())
+			if (g_settings.GetLegacyHDF5Dumps())
 			{
 				if (m_HDF5_Dump_File->WriteAtrribute("/FieldData/FD/"+ss.str()+"_real", "frequency", m_FD_Samples.at(n))==false)
 					cerr << "ProcessFieldsFD::Process: can't dump to file...! " << endl;

@@ -48,7 +48,7 @@ end
 
 try
     if (isempty(sar_calc_bin))
-        error('openEMS:CalcSAR','nf2ff binary not found!');
+        error('openEMS:CalcSAR','sar_calc binary not found!');
     end
     cmd = [sar_calc_bin ' -i ' sar_fn ' -o ' sar_out bin_args];
     if isunix

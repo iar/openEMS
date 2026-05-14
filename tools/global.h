@@ -37,13 +37,13 @@ public:
 
 	//! Returns true if native field dumps are requested...
 	bool NativeFieldDumps() const {return m_nativeFieldDumps;}
-	//! Returns true if native field dumps are requested...
+	//! Set dumps to use native fields.
 	void SetNativeFieldDumps(bool val) {m_nativeFieldDumps=val;}
 
 	//! Set true if hdf5 dump should use an older legacy format (used e.g. for Matlab/Octave import)
-	void SetLegacyHFD5Dumps(bool val) {m_legacyHDF5=val;}
+	void SetLegacyHDF5Dumps(bool val) {m_legacyHDF5=val;}
 	//! Returns true if hdf5 dump should use an older legacy format (used e.g. for Matlab/Octave import)
-	bool GetLegacyHFD5Dumps() const {return m_legacyHDF5;}
+	bool GetLegacyHDF5Dumps() const {return m_legacyHDF5;}
 
 	//! Set the verbose level
 	void SetVerboseLevel(int level) {m_VerboseLevel=level;m_SavedVerboseLevel=level;}
