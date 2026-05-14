@@ -94,8 +94,6 @@ bool HDF5_File_Reader::IsValid()
 		cerr << "HDF5_File_Reader::IsValid: the given file """ << m_filename << """ is invalid..." << endl;
 		return false;
 	}
-	if (val==0)
-	cerr << "HDF5_File_Reader::IsValid: the given file """ << m_filename << """ is valid..." << endl;
 	return true;
 }
 
@@ -130,22 +128,6 @@ bool HDF5_File_Reader::ReadAttribute(std::string grp_name, std::string attr_name
 		cerr << "HDF5_File_Reader::ReadAttribute: opening the given file """ << m_filename << """ failed" << endl;
 		return false;
 	}
-
-	hdf5_file = getFile();
-	if (hdf5_file==-1)
-	{
-		cerr << "HDF5_File_Reader::ReadAttribute: opening the given file """ << m_filename << """ failed" << endl;
-		return false;
-	}
-
-	hdf5_file = getFile();
-	if (hdf5_file==-1)
-	{
-		cerr << "HDF5_File_Reader::ReadAttribute: opening the given file """ << m_filename << """ failed" << endl;
-		return false;
-	}
-	// H5Fclose(hdf5_file);
-	// return false;
 
 	if (H5Lexists(hdf5_file, grp_name.c_str(), H5P_DEFAULT)<=0)
 	{

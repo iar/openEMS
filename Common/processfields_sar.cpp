@@ -119,7 +119,8 @@ int ProcessFieldsSAR::Process()
 	m_DumpType = E_FIELD_DUMP;
 	FDTD_FLOAT* field_td=NULL;
 	ArrayLib::ArrayNIJK<FDTD_FLOAT> tmp_field_td;
-	CalcField(tmp_field_td);
+	if (!CalcField(tmp_field_td))
+		return GetNextInterval();
 	field_td = tmp_field_td.data();
 	T = m_Eng_Interface->GetTime(m_dualTime);
 	unsigned int N;
@@ -139,7 +140,8 @@ int ProcessFieldsSAR::Process()
 	if (!m_UseCellKappa)
 	{
 		m_DumpType = J_FIELD_DUMP;
-		CalcField(tmp_field_td);
+		if (!CalcField(tmp_field_td))
+			return GetNextInterval();
 		field_td = tmp_field_td.data();
 		T = m_Eng_Interface->GetTime(m_dualTime);
 		for (size_t n = 0; n<m_FD_Samples.size(); ++n)
