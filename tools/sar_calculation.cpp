@@ -1006,6 +1006,10 @@ bool SAR_Calculation::CalcAvgStep1SAR(ArrayLib::ArrayIJK<bool> &Vx_Valid, ArrayL
 	unsigned int cnt_case2=0;
 	unsigned int cnt_NoConvergence=0;
 
+	// thread-local max SAR tracking — merged under mutex at end
+	std::vector<double> local_maxSAR(m_SAR.size(), 0.0);
+	std::vector<std::array<unsigned int,3>> local_maxSAR_Idx(m_SAR.size(), {0u,0u,0u});
+
 	bool* vx_used_data  = Vx_Used.data();
 	bool* vx_valid_data = Vx_Valid.data();
 	unsigned char* vx_cube_type = m_cube_type.data();
@@ -1068,10 +1072,10 @@ bool SAR_Calculation::CalcAvgStep1SAR(ArrayLib::ArrayIJK<bool> &Vx_Valid, ArrayL
 					for (size_t n=0;n<m_SAR.size();++n)
 					{
 						m_SAR.at(n)->data(out_loc)=vx_sar[n];
-						if (vx_sar[n]>m_maxSAR.at(n))
+						if (vx_sar[n]>local_maxSAR.at(n))
 						{
-							m_maxSAR.at(n) = vx_sar[n];
-							m_maxSAR_Idx.at(n) = {i,j,k};
+							local_maxSAR.at(n) = vx_sar[n];
+							local_maxSAR_Idx.at(n) = {i,j,k};
 						}
 					}
 					AssignUsedSAR(vx_sar, start, stop, partial_start, partial_stop, Vx_Used, Vx_Valid);
@@ -1096,6 +1100,14 @@ bool SAR_Calculation::CalcAvgStep1SAR(ArrayLib::ArrayIJK<bool> &Vx_Valid, ArrayL
 		m_step1_case1 += cnt_case1;
 		m_step1_case2 += cnt_case2;
 		m_step1_no_conv += cnt_NoConvergence;
+		for (size_t n=0;n<m_SAR.size();++n)
+		{
+			if (local_maxSAR.at(n)>m_maxSAR.at(n))
+			{
+				m_maxSAR.at(n) = local_maxSAR.at(n);
+				m_maxSAR_Idx.at(n) = local_maxSAR_Idx.at(n);
+			}
+		}
 	}
 
 	return true;
