@@ -39,6 +39,9 @@ cdef class SAR_Calculation:
             else:
                 raise Exception('Unknown keyword argument: "{}"'.format(k))
 
+    def __dealloc__(self):
+        del self.thisptr
+
     def SetDebugLevel(self, level):
         self.thisptr.SetDebugLevel(level)
 
@@ -46,13 +49,10 @@ cdef class SAR_Calculation:
         self.thisptr.EnableProgress(enable)
 
     def SetAveragingMass(self, mass):
-        ### Set the averaging mass in g
-        # convert from g to kg
         self.thisptr.SetAveragingMass(float(mass)/1000)
 
     def SetAveragingMethod(self, method, silent=True):
-         #cdef string c_method = method.encode('UTF-8')
-         return self.thisptr.SetAveragingMethod(method.encode('UTF-8'), silent)
+        return self.thisptr.SetAveragingMethod(method.encode('UTF-8'), silent)
 
     def EnableAutoRange(self, dBmax):
         self.thisptr.EnableAutoRange(float(dBmax))
