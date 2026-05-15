@@ -3,6 +3,27 @@
 import numpy as np
 
 def readSAR(fn, f_idx=0):
+    """Read a SAR result HDF5 file written by SAR_Calculation.
+
+    Parameters
+    ----------
+    fn : str
+        Path to the SAR result HDF5 file.
+    f_idx : int, optional
+        Frequency index to read (default 0).
+
+    Returns
+    -------
+    sar : ndarray, shape (nx, ny, nz)
+        SAR values in W/kg.
+    mesh : list of three 1-D ndarrays
+        Mesh node coordinates [x, y, z].
+    sar_data : dict
+        Metadata from the file: 'mass' (kg), 'frequency' (Hz), 'power' (W),
+        and any other dataset attributes (e.g. 'maxSAR').
+    Returns (None, None, None) if the file does not contain a recognised
+    openEMS HDF5 version attribute.
+    """
     sar_data = {}
     import h5py
     with h5py.File(fn, 'r') as h5:

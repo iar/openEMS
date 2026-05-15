@@ -20,6 +20,22 @@ cimport openEMS.sar_calculation
 import os
 
 cdef class SAR_Calculation:
+    """SAR averaging and calculation.
+
+    Keyword arguments accepted by the constructor (all optional):
+
+    mass : float
+        Averaging mass in grams (0 = local SAR, default 0).
+    method : str
+        Averaging method: 'SIMPLE', 'IEEE_C95_3', or 'IEEE_62704'.
+    verbose : int
+        Debug verbosity level.
+    autoRange : float
+        Restrict calculation to cells within this many dB of the peak
+        local power density.
+    EnableCubeStats : bool
+        Record per-cube averaging statistics in the output file.
+    """
     def __cinit__(self, **kw):
         self.thisptr = new _SAR_Calculation()
         for k, v in kw.items():
@@ -49,9 +65,12 @@ cdef class SAR_Calculation:
         self.thisptr.EnableProgress(enable)
 
     def SetAveragingMass(self, mass):
+        """Set averaging mass in grams (0 = local SAR)."""
         self.thisptr.SetAveragingMass(float(mass)/1000)
 
     def SetAveragingMethod(self, method, silent=True):
+        """Set averaging method. Valid values: 'SIMPLE', 'IEEE_C95_3', 'IEEE_62704'.
+        Returns True on success, False if the method name is unknown."""
         return self.thisptr.SetAveragingMethod(method.encode('UTF-8'), silent)
 
     def EnableAutoRange(self, dBmax):
@@ -61,6 +80,9 @@ cdef class SAR_Calculation:
         self.thisptr.EnableCubeStats()
 
     def CalcFromHDF5(self, h5_fn, out_name, export_cube_stats=False, numThreads=0):
+        """Read raw field data from h5_fn, run the SAR calculation, and write
+        results to out_name. Returns True on success.
+        numThreads=0 uses all available hardware threads."""
         if not os.path.exists(h5_fn):
             raise Exception('File "{}" does not exist'.format(h5_fn))
         cdef string in_fn = h5_fn.encode('UTF-8')

@@ -71,7 +71,6 @@ int main(int argc, char *argv[])
 		sar_calc.EnableAutoRange(auto_range);
 		if (export_cube_stats)
 			sar_calc.EnableCubeStats();
-		//sar_calc.SetAveragingMethod(SAR_Calculation::IEEE_62704);
 		if (!sar_calc.SetAveragingMethod(method, !debug))
 			return -1;
 		return sar_calc.CalcFromHDF5(ifile, ofile, legacyHDF5, numThreads);

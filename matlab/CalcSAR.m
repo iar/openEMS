@@ -7,7 +7,7 @@ function CalcSAR(sar_fn, sar_out, varargin)
 %       according to the IEC/IEEE-62704-1!
 %
 % parameter:
-% - sar_fn:   hdf5 file with SAR raw data as created by a dumbox
+% - sar_fn:   hdf5 file with SAR raw data as created by a dump box
 % - sar_out:  hdf5 output file with SAR results
 %
 % optional parameter:

@@ -69,7 +69,7 @@ public:
 	//! Set cell width in all direcitions. (mandatory information for averaging)
 	void SetCellWidth(double* cellWidth[3]);
 
-	//! Set the averaging mash. (mandatory information for averaging)
+	//! Set the averaging mass in kg. (mandatory information for averaging)
 	void SetAveragingMass(float mass) {m_avg_mass=mass;}
 
 	//! Set the cell volumes (optional for speedup)
@@ -87,10 +87,10 @@ public:
 	//! Enable the recording of special averaging cube stats
 	void EnableCubeStats() {m_record_cube_stats=true;}
 
-	//! Limit the SAR calculation area to a box with the highest local power densities
+	//! Limit the SAR calculation to cells within dBmax dB of the peak local power density
 	void EnableAutoRange(double dBmax) {m_autoRange=dBmax;}
 
-	//! Calculate the SAR, requires a preallocated 3D array
+	//! Run the SAR calculation. Retrieve results with GetSAR() and GetSARPower().
 	bool CalcSAR(unsigned int numThreads=0);
 
 	//! Get the total power dumped for frequency index n
@@ -111,7 +111,7 @@ public:
 	//! Write the results to an hdf5 output file (mesh information and some other details are not included here)
 	bool WriteToHDF5(HDF5_File_Writer &out_file, bool legacyHDF5=false);
 
-	//! Read and write from an hdf5 file
+	//! Read raw field data from h5_fn, run the SAR calculation, and write results to out_name
 	bool CalcFromHDF5(std::string h5_fn, std::string out_name, bool legacyHDF5=false, unsigned int numThreads=0);
 
 protected:

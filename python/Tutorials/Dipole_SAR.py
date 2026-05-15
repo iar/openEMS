@@ -41,7 +41,7 @@ mesh_res_phantom = 2.5
 
 feed_R = 50 # feed resistance
 
-# dummpy phantom class to attach named attributes
+# dummy phantom class to attach named attributes
 class phantom:
     pass
 
