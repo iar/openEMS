@@ -11,9 +11,12 @@ function CalcSAR(sar_fn, sar_out, varargin)
 % - sar_out:  hdf5 output file with SAR results
 %
 % optional parameter:
-% - 'mass':   averaging mass in g (default is no averaging)
-% - 'method': IEEE_C95_3, IEEE_62704 or SIMPLE (default)
-% - 'verbose': verbose output
+% - 'mass':       averaging mass in g (default is no averaging)
+% - 'method':     IEEE_C95_3, IEEE_62704 or SIMPLE (default)
+% - 'autoRange':  limit calculation to cells within N dB of peak power density
+% - 'numThreads': number of worker threads (default: all available)
+% - 'progress':   show progress output
+% - 'verbose':    verbose output
 %
 % See also: AddDump
 %
@@ -26,10 +29,16 @@ bin_args = ' --legacyHDF5Dumps';
 for n=1:2:numel(varargin)
     if (strcmp(varargin{n},'verbose'))
         bin_args = [bin_args ' -v'];
+    elseif (strcmp(varargin{n},'progress'))
+        bin_args = [bin_args ' -p'];
     elseif (strcmp(varargin{n},'mass'))
         bin_args = [bin_args ' --mass ' num2str(varargin{n+1})];
     elseif (strcmp(varargin{n},'method'))
         bin_args = [bin_args ' --method ' varargin{n+1}];
+    elseif (strcmp(varargin{n},'autoRange'))
+        bin_args = [bin_args ' --autorange ' num2str(varargin{n+1})];
+    elseif (strcmp(varargin{n},'numThreads'))
+        bin_args = [bin_args ' --numThreads ' num2str(varargin{n+1})];
     else
         error(['Invalid argument: ' varargin{n}]);
     end
