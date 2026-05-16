@@ -42,15 +42,15 @@ def _make_raw_sar_hdf5(path, nx=4, ny=4, nz=4, cell_dx=1e-3,
 
     complex_dtype = np.dtype([('r', np.float32), ('i', np.float32)])
 
-    cond_arr = np.broadcast_to(conductivity, (nx, ny, nz)).astype(np.float32)
-    dens_arr = np.broadcast_to(density,      (nx, ny, nz)).astype(np.float32)
+    cond_arr = np.empty((nx, ny, nz), dtype=np.float32); cond_arr[...] = conductivity
+    dens_arr = np.empty((nx, ny, nz), dtype=np.float32); dens_arr[...] = density
 
     with h5py.File(path, 'w') as h5:
         h5.attrs['openEMS_HDF5_version'] = np.float64(0.3)
 
         for grp, n in (('Mesh', (nx, ny, nz)), ('CellWidth', (nx, ny, nz))):
             for axis, size in zip('xyz', n):
-                h5[f'{grp}/{axis}'] = ((np.arange(size) + 0.5) * cell_dx
+                h5['{}/{}'.format(grp, axis)] = ((np.arange(size) + 0.5) * cell_dx
                                        if grp == 'Mesh'
                                        else np.full(size, cell_dx)).astype(np.float64)
 
@@ -63,7 +63,7 @@ def _make_raw_sar_hdf5(path, nx=4, ny=4, nz=4, cell_dx=1e-3,
         for n_idx in range(len(frequencies)):
             e_data = np.zeros((3, nx, ny, nz), dtype=complex_dtype)
             e_data[0, :, :, :]['r'] = e_field_x
-            h5[f'/FieldData/FD/f{n_idx}'] = e_data
+            h5['/FieldData/FD/f{}'.format(n_idx)] = e_data
 
 
 class _TempFiles:
@@ -149,7 +149,7 @@ class Test_ThreadConsistency(unittest.TestCase):
         os.unlink(self.out1)
         os.unlink(self.out4)
 
-        rng = np.random.default_rng(seed=42)
+        rng = np.random.RandomState(seed=42)
         cond = rng.uniform(0.1, 1.0, (self.NX, self.NY, self.NZ)).astype(np.float32)
         _make_raw_sar_hdf5(self.in_path,
                            nx=self.NX, ny=self.NY, nz=self.NZ,

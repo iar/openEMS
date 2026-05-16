@@ -973,8 +973,11 @@ void SAR_Calculation::AssignUsedSAR(double* vx_sar, unsigned int start[3], unsig
 							val = (float)vx_sar[n];
 							if (val>m_SAR.at(n)->data(out_loc))
 							{
+								// outer check is optimistic; re-check Vx_Valid and the
+								// max under the lock to close the TOCTOU race.
 								std::lock_guard<std::mutex> lock(m_planeLocks[out_loc % 128]);
-								m_SAR.at(n)->data(out_loc)=val;
+								if (!Vx_Valid.data(out_loc) && val>m_SAR.at(n)->data(out_loc))
+									m_SAR.at(n)->data(out_loc)=val;
 							}
 
 						}
@@ -1069,9 +1072,16 @@ bool SAR_Calculation::CalcAvgStep1SAR(ArrayLib::ArrayIJK<bool> &Vx_Valid, ArrayL
 					++valid;
 					CalcCubicalSAR(vx_sar, start, stop, partial_start, partial_stop);
 
+					{
+						// release barrier: AssignUsedSAR threads that lost the race on
+						// the outer Vx_Valid check will see Vx_Valid=true and the correct
+						// m_SAR value once they acquire this slot's lock.
+						std::lock_guard<std::mutex> lock(m_planeLocks[out_loc % 128]);
+						for (size_t n=0;n<m_SAR.size();++n)
+							m_SAR.at(n)->data(out_loc)=vx_sar[n];
+					}
 					for (size_t n=0;n<m_SAR.size();++n)
 					{
-						m_SAR.at(n)->data(out_loc)=vx_sar[n];
 						if (vx_sar[n]>local_maxSAR.at(n))
 						{
 							local_maxSAR.at(n) = vx_sar[n];
