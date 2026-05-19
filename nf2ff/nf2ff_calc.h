@@ -18,24 +18,19 @@
 #ifndef NF2FF_CALC_H
 #define NF2FF_CALC_H
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <vector>
 #include <cmath>
 #include <complex>
 #include <boost/thread.hpp>
 #include "../tools/arraylib/array_ij.h"
 #include "../tools/arraylib/array_nijk.h"
-#define _USE_MATH_DEFINES
 
 class nf2ff_calc;
 
-#define MIRROR_OFF 0
-#define MIRROR_PEC 1
-#define MIRROR_PMC 2
+enum MirrorType { MIRROR_OFF = 0, MIRROR_PEC = 1, MIRROR_PMC = 2 };
 
 // data structure to exchange data between thread-controller and worker-threads
-typedef struct
+struct nf2ff_data
 {
 	//local working data IN
 	int ny;
@@ -56,7 +51,7 @@ typedef struct
 	ArrayLib::ArrayIJ<std::complex<double>>* m_Np;
 	ArrayLib::ArrayIJ<std::complex<double>>* m_Lt;
 	ArrayLib::ArrayIJ<std::complex<double>>* m_Lp;
-} nf2ff_data;
+};
 
 class nf2ff_calc_thread
 {
@@ -120,8 +115,7 @@ protected:
 	float* m_phi;
 
 	//mirror settings
-	bool m_EnableMirror;
-	int m_MirrorType[3];
+	MirrorType m_MirrorType[3];
 	float m_MirrorPos[3];
 
 	int GetNormalDir(unsigned int* numLines);

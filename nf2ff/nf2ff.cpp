@@ -24,8 +24,7 @@
 #include "../tools/hdf5_file_writer.h"
 #include <hdf5.h>
 #include <boost/algorithm/string.hpp>
-#include <stdio.h>
-#include <stdlib.h>
+#include <clocale>
 #include <vector>
 #include <cmath>
 #include <complex>
@@ -168,7 +167,7 @@ bool nf2ff::AnalyseXMLNode(TiXmlElement* ti_nf2ff)
 	attr = ti_nf2ff->Attribute("freq");
 	if (attr==NULL)
 	{
-		cerr << "nf2ff::AnalyseXMLNode: Can't read frequency inforamtions ... " << endl;
+		cerr << "nf2ff::AnalyseXMLNode: Can't read frequency information..." << endl;
 		return false;
 	}
 	vector<float> freq = SplitString2Float(attr);
@@ -181,7 +180,7 @@ bool nf2ff::AnalyseXMLNode(TiXmlElement* ti_nf2ff)
 	attr = ti_nf2ff->Attribute("Outfile");
 	if (attr==NULL)
 	{
-		cerr << "nf2ff::AnalyseXMLNode: Can't read frequency inforamtions ... " << endl;
+		cerr << "nf2ff::AnalyseXMLNode: Can't read output file name..." << endl;
 		return false;
 	}
 	string outfile = string(attr);
@@ -247,22 +246,22 @@ bool nf2ff::AnalyseXMLNode(TiXmlElement* ti_nf2ff)
 		l_nf2ff->SetRadius(radius);
 
 	// read mirrors
-	TiXmlElement* ti_Mirros = ti_nf2ff->FirstChildElement("Mirror");
+	TiXmlElement* ti_Mirror = ti_nf2ff->FirstChildElement("Mirror");
 	int dir=-1;
 	string type;
 	float pos=0.0;
-	while (ti_Mirros!=NULL)
+	while (ti_Mirror!=NULL)
 	{
-		type = string(ti_Mirros->Attribute("Type"));
-		if (ti_Mirros->QueryIntAttribute("Dir",&dir) != TIXML_SUCCESS)
+		type = string(ti_Mirror->Attribute("Type"));
+		if (ti_Mirror->QueryIntAttribute("Dir",&dir) != TIXML_SUCCESS)
 			dir = -1;
-		if (ti_Mirros->QueryFloatAttribute("Pos",&pos) != TIXML_SUCCESS)
+		if (ti_Mirror->QueryFloatAttribute("Pos",&pos) != TIXML_SUCCESS)
 			dir = -1;
 		if ((dir>=0) && (strcmp(type.c_str(),"PEC")==0))
 			l_nf2ff->SetMirror(MIRROR_PEC, dir, pos);
 		else if ((dir>=0) && (strcmp(type.c_str(),"PMC")==0))
 			l_nf2ff->SetMirror(MIRROR_PMC, dir, pos);
-		ti_Mirros = ti_Mirros->NextSiblingElement("Mirror");
+		ti_Mirror = ti_Mirror->NextSiblingElement("Mirror");
 	}
 
 	TiXmlElement* ti_Planes = ti_nf2ff->FirstChildElement("Planes");
@@ -277,12 +276,14 @@ bool nf2ff::AnalyseXMLNode(TiXmlElement* ti_nf2ff)
 			if (l_nf2ff->AnalyseFile(E_name,H_name)==false)
 			{
 				cerr << "nf2ff::AnalyseXMLNode: Error, analysing Plane ... " << endl;
+				delete l_nf2ff;
 				return false;
 			}
 		}
 		else
 		{
 			cerr << "nf2ff::AnalyseXMLNode: Error, invalid plane entry ... " << endl;
+			delete l_nf2ff;
 			return false;
 		}
 		ti_Planes = ti_Planes->NextSiblingElement("Planes");
@@ -475,7 +476,7 @@ bool nf2ff::AnalyseFile(string E_Field_file, string H_Field_file)
 			if ((H_fd_data.at(fn)->extent(1)!=E_numLines[0]) || (H_fd_data.at(fn)->extent(2)!=E_numLines[1]) || (H_fd_data.at(fn)->extent(3)!=E_numLines[2]) )
 			{
 				cerr << H_fd_data.at(fn)->extent(1) << " != " << E_numLines[0]  << ", " <<  H_fd_data.at(fn)->extent(2) << " != " << E_numLines[1]  << ", " <<  H_fd_data.at(fn)->extent(3) << " != " << E_numLines[2] << endl;
-				cerr << "nf2ff::AnalyseFile: E FD data size mismatch... " << endl;
+				cerr << "nf2ff::AnalyseFile: H FD data size mismatch... " << endl;
 				for (size_t fn=0;fn<m_nf2ff.size();++fn)
 					delete E_fd_data.at(fn);
 				for (size_t fn=0;fn<m_nf2ff.size();++fn)

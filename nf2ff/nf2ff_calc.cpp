@@ -16,16 +16,13 @@
 */
 
 #include "nf2ff_calc.h"
-#include "../tools/array_ops.h"
 #include "../tools/useful.h"
+#include "../tools/constants.h"
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <vector>
 #include <cmath>
 #include <complex>
 #include <iostream>
-#include <sstream>
 
 using namespace std;
 
@@ -115,7 +112,7 @@ void nf2ff_calc_thread::operator()()
 	float sinT,sinP;
 	float cosP,cosT;
 	float r_cos_psi;
-	float k = 2*M_PI*m_nf_calc->m_freq/C0*sqrt(m_nf_calc->m_permittivity*m_nf_calc->m_permeability);
+	float k = 2*PI*m_nf_calc->m_freq/C0*sqrt(m_nf_calc->m_permittivity*m_nf_calc->m_permeability);
 	complex<float> exp_jkr;
 	complex<float> _I_(0,1);
 	for (unsigned int tn=0;tn<m_nf_calc->m_numTheta;++tn)
@@ -260,7 +257,7 @@ void nf2ff_calc::SetMirror(int type, int dir, float pos)
 		cerr << "nf2ff_calc::SetMirror: Error, invalid type!" << endl;
 		return;
 	}
-	m_MirrorType[dir] = type;
+	m_MirrorType[dir] = static_cast<MirrorType>(type);
 	m_MirrorPos[dir] = pos;
 }
 
@@ -475,10 +472,10 @@ bool nf2ff_calc::AddSinglePlane(float **lines, unsigned int* numLines, ArrayLib:
 				Lt(tn, pn) += (*thread_data[n].m_Lt)(tn, pn);
 				Lp(tn, pn) += (*thread_data[n].m_Lp)(tn, pn);
 			}
-		thread_data[n].m_Nt->Reset();
-		thread_data[n].m_Np->Reset();
-		thread_data[n].m_Lt->Reset();
-		thread_data[n].m_Lp->Reset();
+		delete thread_data[n].m_Nt;
+		delete thread_data[n].m_Np;
+		delete thread_data[n].m_Lt;
+		delete thread_data[n].m_Lp;
 	}
 
 	m_Barrier->wait(); //wait for termination
@@ -497,8 +494,8 @@ bool nf2ff_calc::AddSinglePlane(float **lines, unsigned int* numLines, ArrayLib:
 	ArrayLib::ArrayIJ<double>& P_rad = *m_P_rad;
 
 	// calc equations 8.23a/b and 8.24a/b
-	float k = 2*M_PI*m_freq/C0*sqrt(m_permittivity*m_permeability);
-	complex<float> factor(0,k/4.0/M_PI/m_radius);
+	float k = 2*PI*m_freq/C0*sqrt(m_permittivity*m_permeability);
+	complex<float> factor(0,k/4.0/PI/m_radius);
 	complex<float> f_exp(0,-1*k*m_radius);
 	factor *= exp(f_exp);
 	float fZ0 = Z0 * sqrt(m_permeability/m_permittivity);
@@ -525,7 +522,7 @@ bool nf2ff_calc::AddSinglePlane(float **lines, unsigned int* numLines, ArrayLib:
 
 	// Maximum directivity (unitless) across sampled angles theta and phi
 	// P_max (W/m^2), m_radPower (W), m_radius (m)
-	m_maxDir = P_max * (4*M_PI * m_radius*m_radius / m_radPower);
+	m_maxDir = P_max * (4*PI * m_radius*m_radius / m_radPower);
 
 	return true;
 }

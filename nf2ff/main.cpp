@@ -30,15 +30,9 @@ int main(int argc, char *argv[])
 
 	if (argc<=1)
 	{
-		cout << " Usage: nf2ff <nf2ff-xml-file>" << endl << endl;
-		cout << endl;
-		exit(-1);
+		cout << " Usage: nf2ff <nf2ff-xml-file>" << endl;
+		return EXIT_FAILURE;
 	}
 
-	if (argc>=2)
-	{
-		return !nf2ff::AnalyseXMLFile(argv[argc-1]);
-	}
-
-	return 0;
+	return !nf2ff::AnalyseXMLFile(argv[argc-1]);
 }
