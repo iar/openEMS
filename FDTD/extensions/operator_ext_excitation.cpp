@@ -317,9 +317,6 @@ void Operator_Ext_Excitation::setupVoltageExcitation(
 	Volt_amp = new FDTD_FLOAT[Volt_Count];
 	Volt_dir = new unsigned short[Volt_Count];
 
-//	cerr << "Excitation::setupVoltageExcitation(): Number of voltage excitation points: " << Volt_Count << endl;
-//	if (Volt_Count==0)
-//		cerr << "No E-Field/voltage excitation found!" << endl;
 	for (int n=0; n<3; n++)
 		for (unsigned int i=0; i<Volt_Count; i++)
 			Volt_index[n][i] = volt_vIndex[n].at(i);
@@ -353,9 +350,6 @@ void Operator_Ext_Excitation::setupCurrentExcitation(
 	Curr_amp = new FDTD_FLOAT[Curr_Count];
 	Curr_dir = new unsigned short[Curr_Count];
 
-//	cerr << "Excitation::setupCurrentExcitation(): Number of current excitation points: " << Curr_Count << endl;
-//	if (Curr_Count==0)
-//		cerr << "No H-Field/current excitation found!" << endl;
 	for (int n=0; n<3; ++n)
 		for (unsigned int i=0; i<Curr_Count; i++)
 			Curr_index[n][i] = curr_vIndex[n].at(i);

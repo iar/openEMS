@@ -18,6 +18,7 @@
 #include "FDTD/engine.h"
 #include "engine_ext_cylindermultigrid.h"
 #include "FDTD/engine_cylindermultigrid.h"
+#include <stdexcept>
 
 using std::cerr;
 using std::endl;
@@ -46,20 +47,13 @@ void Engine_Ext_CylinderMultiGrid::SetEngine(Engine* eng)
 {
 	m_Eng_MG = dynamic_cast<Engine_CylinderMultiGrid*>(eng);
 	if (m_Eng_MG==NULL)
-	{
-		cerr << "Engine_Ext_CylinderMultiGrid::SetEngine(): Error" << endl;
-		exit(0);
-	}
+		throw std::runtime_error("Engine_Ext_CylinderMultiGrid::SetEngine(): Error: engine is not a CylinderMultiGrid engine");
 }
 
 void Engine_Ext_CylinderMultiGrid::DoPreVoltageUpdates()
 {
-	//cerr << "Engine_Ext_CylinderMultiGrid::DoPreVoltageUpdates() for " << m_IsBase << endl;
 	if (!m_IsBase)
-	{
-		//cerr << "child: volt wait on base " << endl;
 		m_WaitOnBase->wait(); //wait on base to finish current sync and/or to finish voltage updates, than start child voltage updates
-	}
 }
 
 void Engine_Ext_CylinderMultiGrid::DoPostVoltageUpdates()
@@ -127,12 +121,8 @@ void Engine_Ext_CylinderMultiGrid::SyncVoltages()
 
 void Engine_Ext_CylinderMultiGrid::DoPreCurrentUpdates()
 {
-	//cerr << "Engine_Ext_CylinderMultiGrid::DoPreCurrentUpdates() for " << m_IsBase << endl;
 	if (!m_IsBase)
-	{
-		//cerr << "child: curr wait on base " << endl;
 		m_WaitOnBase->wait(); //wait on base to finish voltage sync and current updates, than start child current updates
-	}
 }
 
 void Engine_Ext_CylinderMultiGrid::DoPostCurrentUpdates()
