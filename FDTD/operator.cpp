@@ -17,6 +17,7 @@
 
 #include <fstream>
 #include <algorithm>
+#include <stdexcept>
 #include "operator.h"
 #include "engine.h"
 #include "extensions/operator_extension.h"
@@ -1220,11 +1221,6 @@ bool Operator::Calc_ECPos(
 	double delta = GetEdgeLength(ny,pos);
 	double area  = GetEdgeArea(ny,pos);
 
-//	if (isnan(EffMat[0]))
-//	{
-//		cerr << ny << " " << pos[0] << " " << pos[1] << " " << pos[2] << " : " << EffMat[0] << endl;
-//	}
-
 	if (delta)
 	{
 		EC[0] = EffMat[0] * area/delta;
@@ -1287,12 +1283,6 @@ double Operator::GetMaterial(
 ) const
 {
 	CSProperties* prop = CSX->GetPropertyByCoordPriority(coords,vPrims,markAsUsed);
-//	CSProperties* old_prop = CSX->GetPropertyByCoordPriority(coords,CSProperties::MATERIAL,markAsUsed);
-//	if (old_prop!=prop)
-//	{
-//		cerr << "ERROR: Unequal properties!" << endl;
-//		exit(-1);
-//	}
 
 	CSPropMaterial* mat = dynamic_cast<CSPropMaterial*>(prop);
 	if (mat)
@@ -1437,9 +1427,9 @@ bool Operator::AverageMatCellCenter(
 	for (int n=0; n<4; ++n)
 		if (std::isnan(EffMat[n]) || std::isinf(EffMat[n]))
 		{
-			cerr << "Operator::" << __func__ << ": Error, an effective material parameter is not a valid result, this should NOT have happened... exit..." << endl;
+			cerr << "Operator::" << __func__ << ": Error, an effective material parameter is not a valid result, this should NOT have happened..." << endl;
 			cerr << ny << "@" << n << " : " << pos[0] << "," << pos[1] << ","  << pos[2] << endl;
-			exit(0);
+			throw std::runtime_error("Operator: effective material parameter is NaN/Inf");
 		}
 	return true;
 }
@@ -1555,9 +1545,9 @@ bool Operator::AverageMatQuarterCell(
 	for (int n=0; n<4; ++n)
 		if (std::isnan(EffMat[n]) || std::isinf(EffMat[n]))
 		{
-			cerr << "Operator::" << __func__ << ": Error, An effective material parameter is not a valid result, this should NOT have happened... exit..." << endl;
+			cerr << "Operator::" << __func__ << ": Error, An effective material parameter is not a valid result, this should NOT have happened..." << endl;
 			cerr << ny << "@" << n << " : " << pos[0] << "," << pos[1] << ","  << pos[2] << endl;
-			exit(0);
+			throw std::runtime_error("Operator: effective material parameter is NaN/Inf");
 		}
 
 	return true;
@@ -1577,10 +1567,8 @@ bool Operator::Calc_EffMatPos(
 	case CentralCell:
 		return AverageMatCellCenter(ny, pos, EffMat, vPrims);
 	default:
-		cerr << "Operator:: " << __func__ << ":  Error, unknown material averaging method... exit" << endl;
-		exit(1);
+		throw std::runtime_error(std::string("Operator::") + __func__ + ": Error, unknown material averaging method");
 	}
-	return false;
 }
 
 bool Operator::Calc_LumpedElements()
@@ -1892,7 +1880,6 @@ double Operator::CalcTimestep()
 double Operator::CalcTimestep_Var1()
 {
 	m_Used_TS_Name = std::string("Rennings_1");
-//	cout << "Operator::CalcTimestep(): Using timestep algorithm by Andreas Rennings, Dissertation @ University Duisburg-Essen, 2008, pp. 66, eq. 4.52" << endl;
 	dT=1e200;
 	double newT;
 	unsigned int pos[3];
@@ -1931,8 +1918,7 @@ double Operator::CalcTimestep_Var1()
 	}
 	if (dT==0)
 	{
-		cerr << "Operator::CalcTimestep: Timestep is zero... this is not supposed to happen!!! exit!" << endl;
-		exit(3);
+		throw std::runtime_error("Operator::CalcTimestep: Timestep is zero... this is not supposed to happen!");
 	}
 	if (g_settings.GetVerboseLevel()>1)
 	{
@@ -1957,7 +1943,6 @@ double Operator::CalcTimestep_Var3()
 {
 	dT=1e200;
 	m_Used_TS_Name = std::string("Rennings_2");
-//	cout << "Operator::CalcTimestep(): Using timestep algorithm by Andreas Rennings, Dissertation @ University Duisburg-Essen, 2008, pp. 76, eq. 4.77 ff." << endl;
 	double newT;
 	unsigned int pos[3];
 	unsigned int smallest_pos[3] = {0, 0, 0};
@@ -2019,8 +2004,7 @@ double Operator::CalcTimestep_Var3()
 	}
 	if (dT==0)
 	{
-		cerr << "Operator::CalcTimestep: Timestep is zero... this is not supposed to happen!!! exit!" << endl;
-		exit(3);
+		throw std::runtime_error("Operator::CalcTimestep: Timestep is zero... this is not supposed to happen!");
 	}
 	if (g_settings.GetVerboseLevel()>1)
 	{
@@ -2061,12 +2045,6 @@ void Operator::CalcPEC_Range(unsigned int startX, unsigned int stopX, unsigned i
 				{
 					GetYeeCoords(n,pos,coord,false);
 					CSProperties* prop = CSX->GetPropertyByCoordPriority(coord, vPrims, true);
-//					CSProperties* old_prop = CSX->GetPropertyByCoordPriority(coord, (CSProperties::PropertyType)(CSProperties::MATERIAL | CSProperties::METAL), true);
-//					if (old_prop!=prop)
-//					{
-//						cerr << "CalcPEC_Range: " << old_prop << " vs " << prop << endl;
-//						exit(-1);
-//					}
 					if (prop)
 					{
 						if (prop->GetType()==CSProperties::METAL) //set to PEC

@@ -16,6 +16,7 @@
 */
 
 #include "engine_interface_fdtd.h"
+#include <stdexcept>
 
 using std::cerr;
 using std::endl;
@@ -23,17 +24,11 @@ using std::endl;
 Engine_Interface_FDTD::Engine_Interface_FDTD(Operator* op) : Engine_Interface_Base(op)
 {
 	if (op==NULL)
-	{
-		cerr << "Engine_Interface_FDTD::Engine_Interface_FDTD: Error: Operator is not set! Exit!" << endl;
-		exit(1);
-	}
+		throw std::runtime_error("Engine_Interface_FDTD::Engine_Interface_FDTD: Error: Operator is not set!");
 	m_Op = op;
 	m_Eng = m_Op->GetEngine();
 	if (m_Eng==NULL)
-	{
-		cerr << "Engine_Interface_FDTD::Engine_Interface_FDTD: Error: Engine is not set! Exit!" << endl;
-		exit(1);
-	}
+		throw std::runtime_error("Engine_Interface_FDTD::Engine_Interface_FDTD: Error: Engine is not set!");
 }
 
 Engine_Interface_FDTD::~Engine_Interface_FDTD()
@@ -230,35 +225,6 @@ double Engine_Interface_FDTD::CalcVoltageIntegral(const unsigned int* start, con
 	}
 	return result;
 }
-
-//double Engine_Interface_FDTD::CalcVoltageIntegral(const unsigned int* start, const unsigned int* stop) const
-//{
-//	//cerr << "CalcVoltageIntegral" << start[0] << ", " << start[1] << ", " << start[2] << " -> " << stop[0] << ", " << stop[1] << ", " << stop[2] << ", " << endl;
-//	double result=0;
-//	//unsigned int pos[3]={min(start[0],stop[0]),min(start[1],stop[1]),min(start[2],stop[2])};
-//	unsigned int pos[3]={start[0],start[1],start[2]};
-//	for (int n=0; n<3; ++n)
-//	{
-//		if (start[n]<stop[n])
-//		{
-//			for (; pos[n]<stop[n]; ++pos[n])
-//			{
-//				//cerr << "at pos: " << n << ": " << pos[0] << ", " << pos[1] << ", " << pos[2] << endl;
-//				result += m_Eng->GetVolt(n,pos[0],pos[1],pos[2]);
-//			}
-//		}
-//		else
-//		{
-//			for (--pos[n]; pos[n]>=stop[n]; --pos[n])
-//			{
-//				//cerr << "at neg: " << n << ": " << pos[0] << ", " << pos[1] << ", " << pos[2] << endl;
-//				result -= m_Eng->GetVolt(n,pos[0],pos[1],pos[2]);
-//			}
-//		}
-//		pos[n] = stop[n];
-//	}
-//	return result;
-//}
 
 double Engine_Interface_FDTD::GetRawField(unsigned int n, const unsigned int* pos, int type) const
 {

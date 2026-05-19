@@ -18,6 +18,7 @@
 #include "tools/useful.h"
 #include <iostream>
 #include <fstream>
+#include <stdexcept>
 #include "fparser.hh"
 #include "excitation.h"
 
@@ -234,10 +235,7 @@ void Excitation::CalcCustomExcitation(double f0, int nTS, string signal)
 	fParse.AddConstant("e", 2.71828182845904523536);
 	fParse.Parse(signal,"t");
 	if (fParse.GetParseErrorType()!=FunctionParser::FP_NO_ERROR)
-	{
-		cerr << "Operator::CalcCustomExcitation: Function Parser error: " << fParse.ErrorMsg() << endl;
-		exit(1);
-	}
+		throw std::runtime_error(std::string("Excitation::CalcCustomExcitation: Function Parser error: ") + fParse.ErrorMsg());
 	double vars[1];
 	for (unsigned int n=0; n<m_length; ++n)
 	{

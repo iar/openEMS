@@ -16,19 +16,14 @@
 */
 
 #include "engine_interface_sse_fdtd.h"
-
-using std::cerr;
-using std::endl;
+#include <stdexcept>
 
 Engine_Interface_SSE_FDTD::Engine_Interface_SSE_FDTD(Operator_sse* op) : Engine_Interface_FDTD(op)
 {
 	m_Op_SSE = op;
 	m_Eng_SSE = dynamic_cast<Engine_sse*>(m_Op_SSE->GetEngine());
 	if (m_Eng_SSE==NULL)
-	{
-		cerr << "Engine_Interface_SSE_FDTD::Engine_Interface_SSE_FDTD: Error: SSE-Engine is not set! Exit!" << endl;
-		exit(1);
-	}
+		throw std::runtime_error("Engine_Interface_SSE_FDTD::Engine_Interface_SSE_FDTD: Error: SSE-Engine is not set!");
 }
 
 Engine_Interface_SSE_FDTD::~Engine_Interface_SSE_FDTD()

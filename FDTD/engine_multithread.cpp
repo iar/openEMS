@@ -191,7 +191,6 @@ void Engine_Multithread::changeNumThreads(unsigned int numThreads)
 		else
 			if (g_settings.GetVerboseLevel()>0)
 				cout << stop-start+1 << ";";
-//		NS_Engine_Multithread::DBG().cout() << "###DEBUG## Thread " << n << ": start=" << start << " stop=" << stop  << " stop_h=" << stop_h << std::endl;
 		boost::thread *t = new boost::thread( NS_Engine_Multithread::thread(this,start,stop,stop_h,n) );
 		m_thread_group->add_thread( t );
 	}

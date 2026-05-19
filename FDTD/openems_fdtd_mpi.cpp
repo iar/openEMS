@@ -22,8 +22,6 @@
 #include "FDTD/engine_mpi.h"
 #include "Common/processfields.h"
 #include "Common/processintegral.h"
-#include <stdio.h>
-#include <stdlib.h>
 #include <iostream>
 #include <sstream>
 #include <vector>
