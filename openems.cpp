@@ -296,13 +296,13 @@ void openEMS::collectCommandLineArguments()
 				{
 					if (!val) return;
 					cout << "openEMS - dump simulation statistics to '"
-						 << __OPENEMS_RUN_STAT_FILE__ << "' and '"
-						 << __OPENEMS_STAT_FILE__ << "'" << endl;
+						 << OPENEMS_RUN_STAT_FILE << "' and '"
+						 << OPENEMS_STAT_FILE << "'" << endl;
 					m_DumpStats = true;
 				}
 			),
-			"dump simulation statistics to '" __OPENEMS_RUN_STAT_FILE__
-			"' and '" __OPENEMS_STAT_FILE__ "'"
+			"dump simulation statistics to '" OPENEMS_RUN_STAT_FILE
+			"' and '" OPENEMS_STAT_FILE "'"
 		);
 
 	// register our supported options to g_settings
@@ -810,7 +810,7 @@ bool openEMS::ParseFDTDSetup(std::string file)
 	if (!doc.LoadFile())
 	{
 		cerr << "openEMS: Error File-Loading failed!!! File: " << file << endl;
-		exit(-1);
+		return false;
 	}
 
 	if (g_settings.GetVerboseLevel()>0)
@@ -819,14 +819,14 @@ bool openEMS::ParseFDTDSetup(std::string file)
 	if (openEMSxml==NULL)
 	{
 		cerr << "Can't read openEMS ... " << endl;
-		exit(-1);
+		return false;
 	}
 	TiXmlElement* FDTD_Opts = openEMSxml->FirstChildElement("FDTD");
 
 	if (FDTD_Opts==NULL)
 	{
 		cerr << "Can't read openEMS FDTD Settings... " << endl;
-		exit(-1);
+		return false;
 	}
 
 	if (g_settings.GetVerboseLevel()>0)
@@ -885,13 +885,8 @@ bool openEMS::Parse_XML_FDTDSetup(TiXmlElement* FDTD_Opts)
 	if (BC==NULL)
 	{
 		cerr << "Can't read openEMS boundary cond Settings... " << endl;
-		exit(-3);
+		return false;
 	}
-
-//	const char* tmp = BC->Attribute("PML_Grading");
-//	string pml_gradFunc;
-//	if (tmp)
-//		pml_gradFunc = string(tmp);
 
 	string bound_names[] = {"xmin","xmax","ymin","ymax","zmin","zmax"};
 	string s_bc;
@@ -1276,7 +1271,7 @@ int openEMS::SetupFDTD()
 		NrTS = maxTime_TS;
 
 	if (!m_Exc->buildExcitationSignal(NrTS))
-		exit(2);
+		return 2;
 	m_Exc->DumpVoltageExcite("et");
 	m_Exc->DumpCurrentExcite("ht");
 
@@ -1408,8 +1403,6 @@ void openEMS::RunFDTD()
 
 	//add all timesteps to end-crit field processing with max excite amplitude
 	unsigned int maxExcite = FDTD_Op->GetExcitationSignal()->GetMaxExcitationTimestep();
-//	for (unsigned int n=0; n<FDTD_Op->Exc->Volt_Count; ++n)
-//		ProcField->AddStep(FDTD_Op->Exc->Volt_delay[n]+maxExcite);
 	ProcField->AddStep(maxExcite);
 
 	double change=1;
@@ -1425,7 +1418,7 @@ void openEMS::RunFDTD()
 	timeval prevTime= currTime;
 
 	if (m_DumpStats)
-		InitRunStatistics(__OPENEMS_RUN_STAT_FILE__);
+		InitRunStatistics(OPENEMS_RUN_STAT_FILE);
 	//*************** simulate ************//
 
 	PA->PreProcess();
@@ -1443,7 +1436,6 @@ void openEMS::RunFDTD()
 				maxE=currE;
 		}
 
-//		cout << " do " << step << " steps; current: " << eng.GetNumberOfTimesteps() << endl;
 		currTS = FDTD_Eng->GetNumberOfTimesteps();
 		if ((step<0) || (step>(int)(NrTS - currTS))) step=NrTS - currTS;
 
@@ -1477,7 +1469,7 @@ void openEMS::RunFDTD()
 			PA->FlushNext();
 
 			if (m_DumpStats)
-				DumpRunStatistics(__OPENEMS_RUN_STAT_FILE__, t_run, currTS, speed, currE);
+				DumpRunStatistics(OPENEMS_RUN_STAT_FILE, t_run, currTS, speed, currE);
 			FDTD_Eng->NextInterval(speed);
 		}
 	}
@@ -1492,7 +1484,7 @@ void openEMS::RunFDTD()
 	cout << "Speed: " << numCells*(double)FDTD_Eng->GetNumberOfTimesteps()/t_diff*1e-6 << " MCells/s " << endl;
 
 	if (m_DumpStats)
-		DumpStatistics(__OPENEMS_STAT_FILE__, t_diff);
+		DumpStatistics(OPENEMS_STAT_FILE, t_diff);
 
 	//*************** postproc ************//
 	PA->PostProcess();

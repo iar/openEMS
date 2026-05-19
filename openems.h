@@ -24,13 +24,13 @@
 #else
 #include <sys/time.h>
 #endif
-#include <time.h>
+#include <ctime>
 #include <vector>
 
 #include "openems_global.h"
 
-#define __OPENEMS_STAT_FILE__ "openEMS_stats.txt"
-#define __OPENEMS_RUN_STAT_FILE__ "openEMS_run_stats.txt"
+#define OPENEMS_STAT_FILE "openEMS_stats.txt"
+#define OPENEMS_RUN_STAT_FILE "openEMS_run_stats.txt"
 
 class Operator;
 class Engine;
