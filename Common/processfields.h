@@ -22,7 +22,6 @@
 #include "tools/array_ops.h"
 #include "tools/arraylib/array_nijk.h"
 
-#define __VTK_DATA_TYPE__ "double"
 
 class VTK_File_Writer;
 class HDF5_File_Writer;

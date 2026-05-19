@@ -87,7 +87,7 @@ int ProcessFieldsFD::Process()
 	double T = m_Eng_Interface->GetTime(m_dualTime);
 	for (size_t n = 0; n<m_FD_Samples.size(); ++n)
 	{
-		std::complex<float> exp_jwt_2_dt = std::exp( (std::complex<float>)(-2.0 * _I * M_PI * m_FD_Samples.at(n) * T) );
+		std::complex<float> exp_jwt_2_dt = std::exp( (std::complex<float>)(-2.0 * I_UNIT * PI * m_FD_Samples.at(n) * T) );
 		exp_jwt_2_dt *= 2; // *2 for single-sided spectrum
 		exp_jwt_2_dt *= Op->GetTimestep() * m_FD_Interval; // multiply with timestep-interval
 		unsigned int N = m_FD_Fields.at(n)->size();
@@ -129,13 +129,13 @@ void ProcessFieldsFD::DumpFDData()
 			//dump multiple phase to vtk-files
 			for (int p=0; p<Nr_Ph; ++p)
 			{
-				angle = 2.0 * M_PI * p / Nr_Ph;
-				std::complex<float> exp_jwt = std::exp( (std::complex<float>)( _I * angle) );
+				angle = 2.0 * PI * p / Nr_Ph;
+				std::complex<float> exp_jwt = std::exp( (std::complex<float>)(I_UNIT * angle) );
 				for (unsigned int ijk=0;ijk<N;++ijk)
 					field[ijk] = real(field_fd[ijk] * exp_jwt);
 
 				stringstream ss;
-				ss << m_filename << fixed << "_f=" << str_freq << "_p=" << std::setw( 3 ) << std::setfill( '0' ) <<(int)(angle * 180 / M_PI);
+				ss << m_filename << fixed << "_f=" << str_freq << "_p=" << std::setw( 3 ) << std::setfill( '0' ) <<(int)(angle * 180 / PI);
 
 				m_Vtk_Dump_File->SetFilename(ss.str());
 				m_Vtk_Dump_File->ClearAllFields();

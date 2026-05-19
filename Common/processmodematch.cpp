@@ -219,7 +219,6 @@ void ProcessModeMatch::InitProcess()
 	}
 
 	norm = sqrt(norm);
-//	cerr << norm << endl;
 	// normalize template function...
 	for (unsigned int posP = 0; posP<m_numLines[0]; ++posP)
 		for (unsigned int posPP = 0; posPP<m_numLines[1]; ++posPP)
@@ -228,7 +227,6 @@ void ProcessModeMatch::InitProcess()
 			{
 				m_ModeDist(n, posP, posPP) /= norm;
 			}
-//			cerr << posP << " " << posPP << " : " << m_ModeDist[0](posP, posPP) << " , " << m_ModeDist[1](posP, posPP) << endl;
 		}
 
 	ProcessIntegral::InitProcess();
@@ -261,7 +259,7 @@ double* ProcessModeMatch::CalcMultipleIntegrals()
 	double field = 0;
 	double purity = 0;
 	double area = 0;
-    bool dualMesh = m_ModeFieldType==1;
+	bool dualMesh = m_ModeFieldType==1;
 
 	int nP = (m_ny+1)%3;
 	int nPP = (m_ny+2)%3;

@@ -410,7 +410,5 @@ bool ProcessFields::CalcField(ArrayLib::ArrayNIJK<FDTD_FLOAT> &field)
 		cerr << "ProcessFields::CalcField(): Error, unknown dump type..." << endl;
 		return false;
 	}
-	// this should never happen!
-	return false;
 }
 

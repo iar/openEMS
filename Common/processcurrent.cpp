@@ -163,7 +163,6 @@ double ProcessCurrent::CalcIntegral()
 		default:
 			//this cannot happen...
 			return 0.0;
-			break;
 		}
 	}
 
