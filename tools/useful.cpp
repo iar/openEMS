@@ -20,8 +20,6 @@
 #include <cstdlib>
 #include <cmath>
 #include <climits>
-#include <stdio.h>
-#include <stdlib.h>
 #include <iomanip>
 #include <sstream>
 #include <boost/algorithm/string.hpp>

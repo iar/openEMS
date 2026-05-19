@@ -40,6 +40,7 @@ public:
 	static T* alloc(size_t numelem)
 	{
 		T* ptr = new T[numelem]();
+		return ptr;
 	}
 
 	static void free(T* ptr, size_t numelem)
@@ -65,8 +66,9 @@ public:
 			// POSIX says alignment >= sizeof(void*)
 			alignment = sizeof(void *);
 		else
-			// POSIX says alignment must be a power of 2
-			alignment = 1 << (size_t) ceil(log2(sizeof(T)));
+			// POSIX says alignment must be a power of 2.
+			// TODO: replace with std::bit_ceil(sizeof(T)) when upgrading to C++20.
+			alignment = 1 << (size_t) std::ceil(std::log2(sizeof(T)));
 
 		T* buf;
 #ifdef _WIN32

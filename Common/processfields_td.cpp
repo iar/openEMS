@@ -70,7 +70,7 @@ int ProcessFieldsTD::Process()
 		ss << std::setw( pad_length ) << std::setfill( '0' ) << m_Eng_Interface->GetNumberOfTimesteps();
 		success &= m_HDF5_Dump_File->WriteVectorField<float>(ss.str(), field, g_settings.GetLegacyHDF5Dumps());
 		float time[1] = {(float)m_Eng_Interface->GetTime(m_dualTime)};
-		success &= m_HDF5_Dump_File->WriteAtrribute("/FieldData/TD/"+ss.str(),"time",time,1);
+		success &= m_HDF5_Dump_File->WriteAttribute("/FieldData/TD/"+ss.str(),"time",time,1);
 	}
 	else
 	{

@@ -79,7 +79,7 @@ public:
 	void SetCellDensities(ArrayLib::ArrayIJK<float>* cell_density) {m_cell_density=cell_density;}
 
 	//! Add an electric field
-	void AddEFieldAndCondictivity(float freq, ArrayLib::ArrayNIJK<std::complex<float>>* e_field, ArrayLib::ArrayIJK<float>* cell_conductivity);
+	void AddEFieldAndConductivity(float freq, ArrayLib::ArrayNIJK<std::complex<float>>* e_field, ArrayLib::ArrayIJK<float>* cell_conductivity);
 
 	//! Add an electric field and current density field
 	void AddEFieldAndJField(float freq, ArrayLib::ArrayNIJK<std::complex<float>>* e_field, ArrayLib::ArrayNIJK<std::complex<float>>* j_field);
@@ -135,8 +135,8 @@ protected:
 	size_t m_AirVoxel;
 
 	// output data
-	ArrayLib::ArrayIJK<unsigned int> m_posInOuput;
-	std::vector<unsigned int> m_cellIndicies[3];  // list of output indecies into the raw data mesh
+	ArrayLib::ArrayIJK<unsigned int> m_posInOutput;
+	std::vector<unsigned int> m_cellIndices[3];  // list of output indecies into the raw data mesh
 	ArrayLib::ArrayIJK<unsigned char> m_cube_type;
 	ArrayLib::ArrayIJK<float> m_cube_mass;
 	ArrayLib::ArrayIJK<float> m_cube_volume;

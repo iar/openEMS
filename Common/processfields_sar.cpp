@@ -277,7 +277,7 @@ void ProcessFieldsSAR::DumpFDData()
 			if (!m_UseCellKappa)
 				SAR_Calc.AddEFieldAndJField(m_FD_Samples.at(n), m_E_FD_Fields.at(n), m_J_FD_Fields.at(n));
 			else
-				SAR_Calc.AddEFieldAndCondictivity(m_FD_Samples.at(n), m_E_FD_Fields.at(n), &cell_kappa);
+				SAR_Calc.AddEFieldAndConductivity(m_FD_Samples.at(n), m_E_FD_Fields.at(n), &cell_kappa);
 		}
 		SAR_Calc.CalcSAR();
 

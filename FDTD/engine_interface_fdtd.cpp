@@ -343,5 +343,5 @@ double Engine_Interface_FDTD::CalcFastEnergy() const
 			}
 		}
 	}
-	return __EPS0__*E_energy + __MUE0__*H_energy;
+	return EPS0*E_energy + MUE0*H_energy;
 }

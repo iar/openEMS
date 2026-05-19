@@ -58,7 +58,7 @@ void ProcessFieldsFD::InitProcess()
 	if (m_HDF5_Dump_File)
 	{
 		m_HDF5_Dump_File->SetCurrentGroup("/FieldData/FD");
-		m_HDF5_Dump_File->WriteAtrribute("/FieldData/FD","frequency",m_FD_Samples);
+		m_HDF5_Dump_File->WriteAttribute("/FieldData/FD","frequency",m_FD_Samples);
 	}
 
 	//create data structures...
@@ -187,12 +187,12 @@ void ProcessFieldsFD::DumpFDData()
 
 			if (g_settings.GetLegacyHDF5Dumps())
 			{
-				if (m_HDF5_Dump_File->WriteAtrribute("/FieldData/FD/"+ss.str()+"_real", "frequency", m_FD_Samples.at(n))==false)
+				if (m_HDF5_Dump_File->WriteAttribute("/FieldData/FD/"+ss.str()+"_real", "frequency", m_FD_Samples.at(n))==false)
 					cerr << "ProcessFieldsFD::Process: can't dump to file...! " << endl;
-				if (m_HDF5_Dump_File->WriteAtrribute("/FieldData/FD/"+ss.str()+"_imag", "frequency", m_FD_Samples.at(n))==false)
+				if (m_HDF5_Dump_File->WriteAttribute("/FieldData/FD/"+ss.str()+"_imag", "frequency", m_FD_Samples.at(n))==false)
 					cerr << "ProcessFieldsFD::Process: can't dump to file...! " << endl;
 			}
-			else if (m_HDF5_Dump_File->WriteAtrribute("/FieldData/FD/"+ss.str(), "frequency", m_FD_Samples.at(n))==false)
+			else if (m_HDF5_Dump_File->WriteAttribute("/FieldData/FD/"+ss.str(), "frequency", m_FD_Samples.at(n))==false)
 				cerr << "ProcessFieldsFD::Process: can't dump to file...! " << endl;
 		}
 		return;

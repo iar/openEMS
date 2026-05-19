@@ -764,8 +764,8 @@ void Operator::DumpMaterial2File(std::string filename)
 				{
 					double inMat[4];
 					Calc_EffMatPos(n, pos, inMat, vPrims);
-					epsilon(n, pos[0], pos[1], pos[2]) = inMat[0]/__EPS0__;
-					mue(n, pos[0], pos[1], pos[2])     = inMat[2]/__MUE0__;
+					epsilon(n, pos[0], pos[1], pos[2]) = inMat[0]/EPS0;
+					mue(n, pos[0], pos[1], pos[2])     = inMat[2]/MUE0;
 					kappa(n, pos[0], pos[1], pos[2])   = inMat[1];
 					sigma(n, pos[0], pos[1], pos[2])   = inMat[3];
 				}
@@ -1394,7 +1394,7 @@ bool Operator::AverageMatCellCenter(
 		area+=A_n;
 	}
 
-	EffMat[0]*=__EPS0__/area;
+	EffMat[0]*=EPS0/area;
 	EffMat[1]/=area;
 
 	//******************************* mu,sigma averaging *****************************//
@@ -1431,7 +1431,7 @@ bool Operator::AverageMatCellCenter(
 		length+=delta_ny;
 	}
 
-	EffMat[2] = length * __MUE0__ / EffMat[2];
+	EffMat[2] = length * MUE0 / EffMat[2];
 	if (EffMat[3]) EffMat[3]=length / EffMat[3];
 
 	for (int n=0; n<4; ++n)
@@ -1512,7 +1512,7 @@ bool Operator::AverageMatQuarterCell(
 	EffMat[1] += GetMaterial(n, shiftCoord, 1, vPrims)*A_n;
 	area+=A_n;
 
-	EffMat[0]*=__EPS0__/area;
+	EffMat[0]*=EPS0/area;
 	EffMat[1]/=area;
 
 	//******************************* mu,sigma averaging *****************************//
@@ -1549,7 +1549,7 @@ bool Operator::AverageMatQuarterCell(
 		EffMat[3] = 0;
 	length+=delta_ny;
 
-	EffMat[2] = length * __MUE0__ / EffMat[2];
+	EffMat[2] = length * MUE0 / EffMat[2];
 	if (EffMat[3]) EffMat[3]=length / EffMat[3];
 
 	for (int n=0; n<4; ++n)
@@ -1681,7 +1681,7 @@ bool Operator::Calc_LumpedElements()
 				{
 					epsilon =  C / unitGC;
 
-					if (epsilon< __EPS0__)
+					if (epsilon< EPS0)
 					{
 						cerr << "Operator::Calc_LumpedElements(): Warning: Lumped Element capacity is too small for its size! skipping. "
 								<< " ID: " << prims.at(bn)->GetID() << " @ Property: " << PLE->GetName() << endl;
@@ -2150,7 +2150,7 @@ void Operator::DeleteExtension(Operator_Extension* op_ext)
 double Operator::CalcNumericPhaseVelocity(unsigned int start[3], unsigned int stop[3], double propDir[3], float freq) const
 {
 	double average_mesh_disc[3];
-	double c0 = __C0__/sqrt(GetBackgroundEpsR()*GetBackgroundMueR());
+	double c0 = C0/sqrt(GetBackgroundEpsR()*GetBackgroundMueR());
 
 	//calculate average mesh deltas
 	for (int n=0;n<3;++n)
@@ -2208,7 +2208,7 @@ double Operator::CalcNumericPhaseVelocity(unsigned int start[3], unsigned int st
 	}
 
 	if (g_settings.GetVerboseLevel()>1)
-		cerr << "Operator::CalcNumericPhaseVelocity: Newton iteration estimated solution: " << phv/__C0__ << "*c0 in " <<  it_count << " iterations." << endl;
+		cerr << "Operator::CalcNumericPhaseVelocity: Newton iteration estimated solution: " << phv/C0 << "*c0 in " <<  it_count << " iterations." << endl;
 
 	return phv;
 }

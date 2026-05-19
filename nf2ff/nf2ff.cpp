@@ -566,7 +566,7 @@ bool nf2ff::Write2HDF5(string filename)
 		return false;
 
 	float attr_value = 2;
-	hdf_file.WriteAtrribute("/Mesh", "MeshType", &attr_value, 1);
+	hdf_file.WriteAttribute("/Mesh", "MeshType", &attr_value, 1);
 
 	//write field data
 	size_t dim = 2;
@@ -638,20 +638,20 @@ bool nf2ff::Write2HDF5(string filename)
 	delete[] buffer;
 
 	//write frequency attribute
-	hdf_file.WriteAtrribute("/nf2ff", "Frequency",m_freq);
+	hdf_file.WriteAttribute("/nf2ff", "Frequency",m_freq);
 
 	buffer = new double[m_freq.size()];
 	//write radiated power attribute
 	for (size_t fn=0;fn<m_freq.size();++fn)
 		buffer[fn] = GetTotalRadPower(fn);
-	hdf_file.WriteAtrribute("/nf2ff", "Prad",buffer,m_freq.size());
+	hdf_file.WriteAttribute("/nf2ff", "Prad",buffer,m_freq.size());
 	delete[] buffer;
 
 	//write max directivity attribute
 	buffer = new double[m_freq.size()];
 	for (size_t fn=0;fn<m_freq.size();++fn)
 		buffer[fn] = GetMaxDirectivity(fn);
-	hdf_file.WriteAtrribute("/nf2ff", "Dmax",buffer,m_freq.size());
+	hdf_file.WriteAttribute("/nf2ff", "Dmax",buffer,m_freq.size());
 	delete[] buffer;
 
 	if (m_permittivity.size()>0)
@@ -659,7 +659,7 @@ bool nf2ff::Write2HDF5(string filename)
 		buffer = new double[m_permittivity.size()];
 		for (size_t n=0;n<m_permittivity.size();++n)
 			buffer[n] = m_permittivity.at(n);
-		hdf_file.WriteAtrribute("/nf2ff", "Eps_r",buffer,m_permittivity.size());
+		hdf_file.WriteAttribute("/nf2ff", "Eps_r",buffer,m_permittivity.size());
 		delete[] buffer;
 	}
 
@@ -668,7 +668,7 @@ bool nf2ff::Write2HDF5(string filename)
 		buffer = new double[m_permeability.size()];
 		for (size_t n=0;n<m_permeability.size();++n)
 			buffer[n] = m_permeability.at(n);
-		hdf_file.WriteAtrribute("/nf2ff", "Mue_r",buffer,m_permeability.size());
+		hdf_file.WriteAttribute("/nf2ff", "Mue_r",buffer,m_permeability.size());
 		delete[] buffer;
 	}
 

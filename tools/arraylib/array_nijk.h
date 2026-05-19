@@ -33,7 +33,7 @@ namespace ArrayLib
 
 template <typename T, typename IndexType, size_t extentN>
 class ArrayLib::ArrayNIJK :
-	public ArrayBase<ArrayNIJK<T, IndexType>, T, 4, IndexType>
+	public ArrayBase<ArrayNIJK<T, IndexType, extentN>, T, 4, IndexType>
 {
 public:
 	using Base = ArrayBase<ArrayNIJK<T, IndexType>, T, 4, IndexType>;

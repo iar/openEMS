@@ -59,7 +59,7 @@ public:
 		this->m_stride[2] = this->m_extent[3] * this->m_extent[0];
 		this->m_stride[3] = this->m_extent[0];
 
-		// // N-I-J-K ordering
+		// N-I-J-K ordering
 #ifdef OPENEMS_ENGINE_NIJK
 		this->m_stride[0] = this->m_extent[1] * this->m_extent[2] * this->m_extent[3];
 		this->m_stride[1] = this->m_extent[2] * this->m_extent[3];

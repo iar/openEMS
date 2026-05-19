@@ -211,7 +211,7 @@ bool Operator_Ext_ConductingSheet::BuildExtension()
 			tpos[0]=pos[0];tpos[1]=pos[1];tpos[2]=pos[2];
 			t_dir = tanDir(n, pos[0], pos[1], pos[2]);
 			G0 = Conductivity(n, pos[0], pos[1], pos[2])*Thickness(n, pos[0], pos[1], pos[2]);
-			w0 = 8.0/ G0 / Thickness(n, pos[0], pos[1], pos[2])/__MUE0__;
+			w0 = 8.0/ G0 / Thickness(n, pos[0], pos[1], pos[2])/MUE0;
 			Omega_max = w_stop/w0;
 			for (optParaPos=0;optParaPos<numOptPara;++optParaPos)
 				if (omega_stop[optParaPos]>Omega_max)

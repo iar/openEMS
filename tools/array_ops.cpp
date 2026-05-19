@@ -16,7 +16,7 @@
 */
 
 #include "array_ops.h"
-#include <ostream>
+#include <new>
 
 using namespace std;
 
@@ -40,8 +40,7 @@ f4vector* Create1DArray_v4sf(const unsigned int numLines)
 	f4vector* array=NULL;
 	if (MEMALIGN( (void**)&array, 16, F4VECTOR_SIZE*numLines ))
 	{
-		cerr << "cannot allocate aligned memory" << endl;
-		exit(3);
+		throw std::bad_alloc();
 	}
 	for (unsigned int pos=0; pos<numLines; ++pos)
 	{

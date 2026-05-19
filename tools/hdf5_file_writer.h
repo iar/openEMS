@@ -49,24 +49,24 @@ public:
 	bool WriteData(std::string dataSetName, std::complex<float> const* field_buf, size_t dim, size_t* datasize, std::string d_order="");
 	bool WriteData(std::string dataSetName, std::complex<double> const* field_buf, size_t dim, size_t* datasize, std::string d_order="");
 
-	bool WriteAtrribute(std::string locName, std::string attr_name, float const* value, hsize_t size);
-	bool WriteAtrribute(std::string locName, std::string attr_name, double const* value, hsize_t size);
-	bool WriteAtrribute(std::string locName, std::string attr_name, std::vector<float> values);
-	bool WriteAtrribute(std::string locName, std::string attr_name, std::vector<double> values);
-	bool WriteAtrribute(std::string locName, std::string attr_name, std::vector<int> values);
-	bool WriteAtrribute(std::string locName, std::string attr_name, std::vector<unsigned int> values);
-	bool WriteAtrribute(std::string locName, std::string attr_name, float value);
-	bool WriteAtrribute(std::string locName, std::string attr_name, double value);
-	bool WriteAtrribute(std::string locName, std::string attr_name, int value);
-	bool WriteAtrribute(std::string locName, std::string attr_name, unsigned int value);
-	bool WriteAtrribute(std::string locName, std::string attr_name, size_t value);
-	bool WriteAtrribute(std::string locName, std::string attr_name, std::string value);
-	bool WriteAtrribute(std::string locName, std::string attr_name, bool value);
+	bool WriteAttribute(std::string locName, std::string attr_name, float const* value, hsize_t size);
+	bool WriteAttribute(std::string locName, std::string attr_name, double const* value, hsize_t size);
+	bool WriteAttribute(std::string locName, std::string attr_name, std::vector<float> values);
+	bool WriteAttribute(std::string locName, std::string attr_name, std::vector<double> values);
+	bool WriteAttribute(std::string locName, std::string attr_name, std::vector<int> values);
+	bool WriteAttribute(std::string locName, std::string attr_name, std::vector<unsigned int> values);
+	bool WriteAttribute(std::string locName, std::string attr_name, float value);
+	bool WriteAttribute(std::string locName, std::string attr_name, double value);
+	bool WriteAttribute(std::string locName, std::string attr_name, int value);
+	bool WriteAttribute(std::string locName, std::string attr_name, unsigned int value);
+	bool WriteAttribute(std::string locName, std::string attr_name, size_t value);
+	bool WriteAttribute(std::string locName, std::string attr_name, std::string value);
+	bool WriteAttribute(std::string locName, std::string attr_name, bool value);
 
 	void SetCurrentGroup(std::string group, bool createGrp=true);
 
 	bool WriteData(std::string dataSetName, hid_t mem_type, void const* field_buf, size_t dim, size_t* datasize, std::string d_order="");
-	bool WriteAtrribute(std::string locName, std::string attr_name, void const* value, hsize_t size, hid_t mem_type);
+	bool WriteAttribute(std::string locName, std::string attr_name, void const* value, hsize_t size, hid_t mem_type);
 
 protected:
 	std::string m_filename;
@@ -74,7 +74,7 @@ protected:
 
 	hid_t OpenGroup(hid_t hdf5_file, std::string group);
 	bool WriteData(hid_t group, std::string dataSetName, hid_t mem_type, void const* field_buf, size_t dim, size_t* datasize, std::string d_order="");
-	bool WriteAtrribute(hid_t loc, std::string attr_name, void const* value, hsize_t size, hid_t mem_type);
+	bool WriteAttribute(hid_t loc, std::string attr_name, void const* value, hsize_t size, hid_t mem_type);
 };
 
 #endif // HDF5_FILE_WRITER_H

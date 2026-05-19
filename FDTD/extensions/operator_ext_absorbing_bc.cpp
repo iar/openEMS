@@ -123,7 +123,7 @@ bool Operator_Ext_Absorbing_BC::SetInitParams(CSPrimitives* prim, CSPropAbsorbin
 		cerr 	<< "Operator_Ext_Absorbing_BC::SetInitParams(): Warning: Absorbing sheet Currently does not support per-material velocity. Setting to C0 "
 				<< " ID: " << prim->GetID() << " @ Property: " << abc_prop->GetName() << endl;
 
-		m_phaseVelocity = __C0__;
+		m_phaseVelocity = C0;
 	}
 
 	// Copy all of the relevant data, so BuildExtension ca0n work
@@ -216,19 +216,19 @@ bool Operator_Ext_Absorbing_BC::BuildExtension()
 
 					eps = mat->GetEpsilonWeighted(int(m_dir[1]),coord);
 					mue = mat->GetMueWeighted(int(m_dir[1]),coord);
-					vt_nyP = __C0__ * dT / sqrt(eps*mue);
+					vt_nyP = C0 * dT / sqrt(eps*mue);
 
 					eps = mat->GetEpsilonWeighted(int(m_dir[2]),coord);
 					mue = mat->GetMueWeighted(int(m_dir[2]),coord);
-					vt_nyPP = __C0__ * dT / sqrt(eps*mue);*/
+					vt_nyPP = C0 * dT / sqrt(eps*mue);*/
 				}
 				else
 				{
 					eps = m_Op->GetBackgroundEpsR();
 					mue = m_Op->GetBackgroundMueR();
 
-					vt_nyP  = __C0__ * dT / sqrt(eps*mue);
-					vt_nyPP = __C0__ * dT / sqrt(eps*mue);
+					vt_nyP  = C0 * dT / sqrt(eps*mue);
+					vt_nyPP = C0 * dT / sqrt(eps*mue);
 				}
 
 			}

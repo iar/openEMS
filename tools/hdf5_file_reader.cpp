@@ -61,8 +61,8 @@ bool HDF5_File_Reader::open()
 	m_hdf5_file = H5Fopen( m_filename.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT );
 	if (m_hdf5_file==-1)
 	{
-		cerr << "HDF5_File_Reader::open: opening the given file """ << m_filename << """ failed" << endl;
-		return 0;
+		cerr << "HDF5_File_Reader::open: opening the given file \"" << m_filename << "\" failed" << endl;
+		return false;
 	}
 	return (m_hdf5_file>=0);
 }
@@ -86,12 +86,12 @@ bool HDF5_File_Reader::IsValid()
 	htri_t val = H5Fis_hdf5(m_filename.c_str());
 	if (val<0)
 	{
-		cerr << "HDF5_File_Reader::IsValid: the given file """ << m_filename << """ is not accessible..." << endl;
+		cerr << "HDF5_File_Reader::IsValid: the given file \"" << m_filename << "\" is not accessible..." << endl;
 		return false;
 	}
 	if (val==0)
 	{
-		cerr << "HDF5_File_Reader::IsValid: the given file """ << m_filename << """ is invalid..." << endl;
+		cerr << "HDF5_File_Reader::IsValid: the given file \"" << m_filename << "\" is invalid..." << endl;
 		return false;
 	}
 	return true;
@@ -102,19 +102,19 @@ bool HDF5_File_Reader::OpenGroup(hid_t &file, hid_t &group, std::string groupNam
 	file = getFile();
 	if (file==-1)
 	{
-		cerr << "HDF5_File_Reader::OpenGroup: opening the given file """ << m_filename << """ failed" << endl;
-		return 0;
+		cerr << "HDF5_File_Reader::OpenGroup: opening the given file \"" << m_filename << "\" failed" << endl;
+		return false;
 	}
 	if (H5Lexists(file, groupName.c_str(), H5P_DEFAULT)<=0)
 	{
-		return 0;
+		return false;
 	}
 
 	group = H5Gopen(file, groupName.c_str(), H5P_DEFAULT );
 	if (group<0)
 	{
-		cerr << "HDF5_File_Reader::OpenGroup: can't open group """ << groupName << """" << endl;
-		return 0;
+		cerr << "HDF5_File_Reader::OpenGroup: can't open group \"" << groupName << "\"" << endl;
+		return false;
 	}
 	return true;
 }
@@ -125,21 +125,21 @@ bool HDF5_File_Reader::ReadAttribute(std::string grp_name, std::string attr_name
 	hid_t hdf5_file = getFile();
 	if (hdf5_file==-1)
 	{
-		cerr << "HDF5_File_Reader::ReadAttribute: opening the given file """ << m_filename << """ failed" << endl;
+		cerr << "HDF5_File_Reader::ReadAttribute: opening the given file \"" << m_filename << "\" failed" << endl;
 		return false;
 	}
 
 	if (H5Lexists(hdf5_file, grp_name.c_str(), H5P_DEFAULT)<=0)
 	{
 		if (!silent)
-			cerr << "HDF5_File_Reader::ReadAttribute: group with the given name """ << grp_name << """ does not exist" << endl;
+			cerr << "HDF5_File_Reader::ReadAttribute: group with the given name \"" << grp_name << "\" does not exist" << endl;
 		return false;
 	}
 
 	if (H5Aexists_by_name(hdf5_file, grp_name.c_str(), attr_name.c_str(), H5P_DEFAULT)<=0)
 	{
 		if (!silent)
-			cerr << "HDF5_File_Reader::ReadAttribute: attribue with the given name """ << attr_name << """ does not exist" << endl;
+			cerr << "HDF5_File_Reader::ReadAttribute: attribue with the given name \"" << attr_name << "\" does not exist" << endl;
 		return 0;
 	}
 
@@ -147,7 +147,7 @@ bool HDF5_File_Reader::ReadAttribute(std::string grp_name, std::string attr_name
 	if (attr==-1)
 	{
 		if (!silent)
-			cerr << "HDF5_File_Reader::ReadAttribute: Opening the given Attribute: """ << attr_name << """ failed" << endl;
+			cerr << "HDF5_File_Reader::ReadAttribute: Opening the given Attribute: \"" << attr_name << "\" failed" << endl;
 		return false;
 	}
 
@@ -202,7 +202,7 @@ bool HDF5_File_Reader::ReadAttribute(std::string grp_name, std::string attr_name
 	hid_t hdf5_file = getFile();
 	if (hdf5_file==-1)
 	{
-		cerr << "HDF5_File_Reader::ReadAttribute: opening the given file """ << m_filename << """ failed" << endl;
+		cerr << "HDF5_File_Reader::ReadAttribute: opening the given file \"" << m_filename << "\" failed" << endl;
 		return 0;
 	}
 
@@ -214,7 +214,7 @@ bool HDF5_File_Reader::ReadAttribute(std::string grp_name, std::string attr_name
 	hid_t attr = H5Aopen_by_name(hdf5_file, grp_name.c_str(), attr_name.c_str(), H5P_DEFAULT, H5P_DEFAULT);
 	if (attr==-1)
 	{
-		cerr << "HDF5_File_Reader::ReadAttribute: Opening the given Attribute: """ << attr_name << """ failed" << endl;
+		cerr << "HDF5_File_Reader::ReadAttribute: Opening the given Attribute: \"" << attr_name << "\" failed" << endl;
 		return false;
 	}
 
@@ -406,7 +406,7 @@ bool HDF5_File_Reader::GetDataSetInfo(std::string ds_name, hid_t &type, hsize_t 
 	hid_t hdf5_file = getFile();
 	if (hdf5_file==-1)
 	{
-		cerr << "HDF5_File_Reader::ReadDataSet: opening the given file """ << m_filename << """ failed" << endl;
+		cerr << "HDF5_File_Reader::ReadDataSet: opening the given file \"" << m_filename << "\" failed" << endl;
 		return false;
 	}
 
@@ -442,7 +442,7 @@ bool HDF5_File_Reader::ReadDataSet(std::string ds_name, hid_t type, void* buffer
 	hid_t hdf5_file = getFile();
 	if (hdf5_file==-1)
 	{
-		cerr << "HDF5_File_Reader::ReadDataSet: opening the given file """ << m_filename << """ failed" << endl;
+		cerr << "HDF5_File_Reader::ReadDataSet: opening the given file \"" << m_filename << "\" failed" << endl;
 		return false;
 	}
 
@@ -473,7 +473,7 @@ bool HDF5_File_Reader::ReadDataSet(std::string ds_name, hsize_t &nDim, hsize_t* 
 	hid_t hdf5_file = getFile();
 	if (hdf5_file==-1)
 	{
-		cerr << "HDF5_File_Reader::ReadDataSet: opening the given file """ << m_filename << """ failed" << endl;
+		cerr << "HDF5_File_Reader::ReadDataSet: opening the given file \"" << m_filename << "\" failed" << endl;
 		return false;
 	}
 
@@ -545,7 +545,7 @@ bool HDF5_File_Reader::ReadMesh(double** lines, unsigned int* numLines, int &mes
 	hid_t hdf5_file = getFile();
 	if (hdf5_file==-1)
 	{
-		cerr << "HDF5_File_Reader::ReadMesh: opening the given file """ << m_filename << """ failed" << endl;
+		cerr << "HDF5_File_Reader::ReadMesh: opening the given file \"" << m_filename << "\" failed" << endl;
 		return false;
 	}
 	std::string sx = s_mesh_grp + "/x";
@@ -570,7 +570,7 @@ bool HDF5_File_Reader::ReadMesh(double** lines, unsigned int* numLines, int &mes
 	}
 	else
 	{
-		cerr << "HDF5_File_Reader::ReadMesh: no falid mesh information found" << endl;
+		cerr << "HDF5_File_Reader::ReadMesh: no valid mesh information found" << endl;
 		return false;
 	}
 
@@ -597,12 +597,12 @@ bool HDF5_File_Reader::ReadMesh(double** lines, unsigned int* numLines, int &mes
 unsigned int HDF5_File_Reader::GetNumTimeSteps()
 {
 	if (IsValid()==false)
-		return false;
+		return 0;
 
 	hid_t hdf5_file;
 	hid_t TD_grp;
 	if (OpenGroup(hdf5_file, TD_grp, "/FieldData/TD")==false)
-		return false;
+		return 0;
 
 	hsize_t numObj;
 	if (H5Gget_num_objs(TD_grp,&numObj)<0)
@@ -844,7 +844,7 @@ bool HDF5_File_Reader::ReadVectorDataSet(std::string ds_name, ArrayLib::ArrayNIJ
 	// make sure all dimensions are as expected!
 	if ((nDim!=4) || (dims[0]!=3))
 	{
-		delete dims;
+		delete[] dims;
 		return false;
 	}
 

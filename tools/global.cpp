@@ -33,6 +33,7 @@ Global::Global()
 	m_nativeFieldDumps = false;
 	m_legacyHDF5 = false;
 	m_VerboseLevel = 0;
+	m_SavedVerboseLevel = 0;
 	m_optionDesc = NULL;
 }
 

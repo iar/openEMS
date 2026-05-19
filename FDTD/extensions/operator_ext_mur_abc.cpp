@@ -156,7 +156,7 @@ bool Operator_Ext_Mur_ABC::BuildExtension()
 				if (m_v_phase>0.0)
 					c0t = m_v_phase * dT;
 				else
-					c0t = __C0__ * dT / sqrt(eps*mue);
+					c0t = C0 * dT / sqrt(eps*mue);
 				m_Mur_Coeff_nyP(pos[m_nyP], pos[m_nyPP]) = (c0t - delta) / (c0t + delta);
 
 				//nPP
@@ -165,7 +165,7 @@ bool Operator_Ext_Mur_ABC::BuildExtension()
 				if (m_v_phase>0.0)
 					c0t = m_v_phase * dT;
 				else
-					c0t = __C0__ * dT / sqrt(eps*mue);
+					c0t = C0 * dT / sqrt(eps*mue);
 				m_Mur_Coeff_nyPP(pos[m_nyP], pos[m_nyPP]) = (c0t - delta) / (c0t + delta);
 
 			}
@@ -174,7 +174,7 @@ bool Operator_Ext_Mur_ABC::BuildExtension()
 				if (m_v_phase>0.0)
 					c0t = m_v_phase * dT;
 				else
-					c0t = __C0__ / sqrt(m_Op->GetBackgroundEpsR()*m_Op->GetBackgroundMueR()) * dT;
+					c0t = C0 / sqrt(m_Op->GetBackgroundEpsR()*m_Op->GetBackgroundMueR()) * dT;
 				m_Mur_Coeff_nyP (pos[m_nyP], pos[m_nyPP]) = (c0t - delta) / (c0t + delta);
 				m_Mur_Coeff_nyPP(pos[m_nyP], pos[m_nyPP]) = m_Mur_Coeff_nyP(pos[m_nyP], pos[m_nyPP]);
 			}
@@ -198,5 +198,5 @@ void Operator_Ext_Mur_ABC::ShowStat(std::ostream &ostr)  const
 	std::string XYZ[3] = {"x","y","z"};
 	ostr << " Active direction\t: " << XYZ[m_ny] << " at line: " << m_LineNr << endl;
 	if (m_v_phase>0.0)
-		ostr << " Used phase velocity\t: " << m_v_phase << " (" << m_v_phase/__C0__ << " * c_0)" <<endl;
+		ostr << " Used phase velocity\t: " << m_v_phase << " (" << m_v_phase/C0 << " * c_0)" <<endl;
 }

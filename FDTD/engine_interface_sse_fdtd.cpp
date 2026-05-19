@@ -71,5 +71,5 @@ double Engine_Interface_SSE_FDTD::CalcFastEnergy() const
 		}
 	}
 
-	return __EPS0__*(E_energy.f[0]+E_energy.f[1]+E_energy.f[2]+E_energy.f[3]) + __MUE0__*(H_energy.f[0]+H_energy.f[1]+H_energy.f[2]+H_energy.f[3]);
+	return EPS0*(E_energy.f[0]+E_energy.f[1]+E_energy.f[2]+E_energy.f[3]) + MUE0*(H_energy.f[0]+H_energy.f[1]+H_energy.f[2]+H_energy.f[3]);
 }

@@ -157,11 +157,11 @@ void ProcessFields::InitProcess()
 		#endif
 		m_HDF5_Dump_File->WriteRectMesh(numLines,discLines,(int)m_Mesh_Type,discScaling);
 
-		m_HDF5_Dump_File->WriteAtrribute("/", "openEMS_HDF5_version", OPENEMS_HDF5_VERSION);
-		m_HDF5_Dump_File->WriteAtrribute("/", "dump_type", m_DumpType);
-		m_HDF5_Dump_File->WriteAtrribute("/", "dual_mesh", m_dualMesh);
+		m_HDF5_Dump_File->WriteAttribute("/", "openEMS_HDF5_version", OPENEMS_HDF5_VERSION);
+		m_HDF5_Dump_File->WriteAttribute("/", "dump_type", m_DumpType);
+		m_HDF5_Dump_File->WriteAttribute("/", "dual_mesh", m_dualMesh);
 		if ((m_DumpType!=SAR_RAW_DATA) && (g_settings.GetLegacyHDF5Dumps()))
-			m_HDF5_Dump_File->WriteAtrribute("/", "legacy_fmt", true);
+			m_HDF5_Dump_File->WriteAttribute("/", "legacy_fmt", true);
 	}
 }
 

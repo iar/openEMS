@@ -223,10 +223,7 @@ BOOL Signal::Win32ForceExitHandler(DWORD fdwCtrlType)
 
 bool Signal::ReceivedSIGINT(void)
 {
-	if (m_sigintAbort)
-		return true;
-	else
-		return false;
+	return m_sigintAbort != 0;
 }
 
 void Signal::SafeStderrWrite(const char *buf)

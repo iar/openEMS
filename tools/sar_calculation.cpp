@@ -52,7 +52,7 @@ void SAR_Calculation::Reset()
 	m_duration = 0;
 	for (int n=0;n<3;++n)
 	{
-		m_cellIndicies[n].clear();
+		m_cellIndices[n].clear();
 		m_numLines[n]=0;
 		if (m_cleanup_cell_data)
 		{
@@ -62,7 +62,7 @@ void SAR_Calculation::Reset()
 		delete[] m_lines[n];
 		m_lines[n]=NULL;
 	}
-	m_posInOuput.Reset();
+	m_posInOutput.Reset();
 	if (m_cleanup_cell_data)
 	{
 		delete m_cell_volume;
@@ -140,10 +140,10 @@ void SAR_Calculation::SetNumLines(unsigned int numLines[3])
 	for (int n=0;n<3;++n)
 	{
 		m_numLines[n]=numLines[n];
-		m_cellIndicies[n].clear();
-		m_cellIndicies[n].reserve(m_numLines[n]);
+		m_cellIndices[n].clear();
+		m_cellIndices[n].reserve(m_numLines[n]);
 		for (unsigned int i=0;i<m_numLines[n];++i)
-			m_cellIndicies[n].push_back(i);
+			m_cellIndices[n].push_back(i);
 	}
 }
 
@@ -156,12 +156,12 @@ void SAR_Calculation::SetSubRange(int ny, unsigned int start, unsigned int stop)
 	}
 
 	stop = min(stop, m_numLines[ny]);
-	m_cellIndicies[ny].clear();
-	m_cellIndicies[ny].reserve(stop-start);
+	m_cellIndices[ny].clear();
+	m_cellIndices[ny].reserve(stop-start);
 	if (m_DebugLevel>0)
 		cout << "SetSubRange: Dir " << ny << " Start " << start << " Stop " << stop << endl;
 	for (unsigned int i=start;i<stop;++i)
-		m_cellIndicies[ny].push_back(i);
+		m_cellIndices[ny].push_back(i);
 }
 
 void SAR_Calculation::SetCellWidth(double* cellWidth[3])
@@ -170,7 +170,7 @@ void SAR_Calculation::SetCellWidth(double* cellWidth[3])
 		m_cellWidth[n]=cellWidth[n];
 }
 
-void SAR_Calculation::AddEFieldAndCondictivity(float freq, ArrayLib::ArrayNIJK<std::complex<float>>* e_field, ArrayLib::ArrayIJK<float>* cell_conductivity)
+void SAR_Calculation::AddEFieldAndConductivity(float freq, ArrayLib::ArrayNIJK<std::complex<float>>* e_field, ArrayLib::ArrayIJK<float>* cell_conductivity)
 {
 	ArrayLib::ArrayIJK<float>* loc_cpd = new ArrayLib::ArrayIJK<float>("loc_cpd", m_numLines);
 	float* loc_cpd_data = loc_cpd->data();
@@ -183,10 +183,10 @@ void SAR_Calculation::AddEFieldAndCondictivity(float freq, ArrayLib::ArrayNIJK<s
 	double l_pow=0;
 	double power=0;
 	if (e_field->extent(0)!=3)
-		throw;
+		throw std::invalid_argument("AddEFieldAndConductivity: e_field must have extent 3 in N dimension");
 	for (int n=0;n<3;++n)
 		if (e_field->extent(n+1) != m_numLines[n])
-			throw;
+			throw std::invalid_argument("AddEFieldAndConductivity: e_field extent does not match numLines");
 
 	for (pos[0]=0; pos[0]<m_numLines[0]; ++pos[0])
 	{
@@ -409,7 +409,7 @@ bool SAR_Calculation::ReadFromHDF5(std::string h5_fn)
 			Reset();
 			return false;
 		}
-		AddEFieldAndCondictivity(freq.at(n), &E_fd_data, &cell_conductivity);
+		AddEFieldAndConductivity(freq.at(n), &E_fd_data, &cell_conductivity);
 	}
 	return true;
 }
@@ -421,24 +421,24 @@ bool SAR_Calculation::WriteToHDF5(std::string out_name, bool legacyHDF5)
 
 	HDF5_File_Writer out_file(out_name);
 
-	unsigned int out_num_lines[3] = {(unsigned int)m_cellIndicies[0].size(),(unsigned int)m_cellIndicies[1].size(),(unsigned int)m_cellIndicies[2].size()};
+	unsigned int out_num_lines[3] = {(unsigned int)m_cellIndices[0].size(),(unsigned int)m_cellIndices[1].size(),(unsigned int)m_cellIndices[2].size()};
 	double* out_lines[3]={NULL,NULL,NULL};
 	for (int n=0;n<3;++n)
 	{
 		out_lines[n] = new double[out_num_lines[n]];
 		for (unsigned int i=0;i<out_num_lines[n];++i)
-			out_lines[n][i] = m_lines[n][m_cellIndicies[n].at(i)];
+			out_lines[n][i] = m_lines[n][m_cellIndices[n].at(i)];
 	}
 
 	out_file.WriteRectMesh(out_num_lines, out_lines, 0, 1);
 	for (int n=0;n<3;++n)
 		delete[] out_lines[n];
 
-	out_file.WriteAtrribute("/","openEMS_HDF5_version", OPENEMS_HDF5_VERSION);
+	out_file.WriteAttribute("/","openEMS_HDF5_version", OPENEMS_HDF5_VERSION);
 	out_file.SetCurrentGroup("/FieldData/FD");
-	out_file.WriteAtrribute("/FieldData/FD","frequency",m_freq);
+	out_file.WriteAttribute("/FieldData/FD","frequency",m_freq);
 	if (legacyHDF5)
-		out_file.WriteAtrribute("/", "legacy_fmt", true);
+		out_file.WriteAttribute("/", "legacy_fmt", true);
 
 	return WriteToHDF5(out_file, legacyHDF5);
 }
@@ -447,12 +447,12 @@ bool SAR_Calculation::WriteToHDF5(HDF5_File_Writer &out_file, bool legacyHDF5)
 {
 	size_t dims[3];// = new size_t[3];
 	for (size_t n=0;n<3;++n)
-		dims[n]=m_cellIndicies[n].size();
+		dims[n]=m_cellIndices[n].size();
 
 	double mass = CalcTotalMass();
 	if (m_DebugLevel>0)
 		cout << "Total Mass: " << mass << endl;
-	out_file.WriteAtrribute("/","mass",mass);
+	out_file.WriteAttribute("/","mass",mass);
 
 	for (size_t n=0;n<m_freq.size();++n)
 	{
@@ -482,23 +482,23 @@ bool SAR_Calculation::WriteToHDF5(HDF5_File_Writer &out_file, bool legacyHDF5)
 		if (m_cube_volume.data()!=NULL)
 			if (out_file.WriteData(ss.str() + "_CubeVol", H5T_NATIVE_FLOAT, m_cube_volume.data(), 3, dims)==false)
 				cerr << "SAR_Calculation::WriteToHDF5: can't dump to file...! " << endl;
-		if (out_file.WriteAtrribute("/FieldData/FD/"+ss.str(),"frequency",m_freq.at(n))==false)
+		if (out_file.WriteAttribute("/FieldData/FD/"+ss.str(),"frequency",m_freq.at(n))==false)
 			cerr << "SAR_Calculation::WriteToHDF5: can't dump to file...! " << endl;
-		if (out_file.WriteAtrribute("/FieldData/FD/"+ss.str(),"power",pwr)==false)
+		if (out_file.WriteAttribute("/FieldData/FD/"+ss.str(),"power",pwr)==false)
 			cerr << "SAR_Calculation::WriteToHDF5: can't dump to file...! " << endl;
-		if (out_file.WriteAtrribute("/FieldData/FD/"+ss.str(),"maxSAR", m_maxSAR.at(n))==false)
+		if (out_file.WriteAttribute("/FieldData/FD/"+ss.str(),"maxSAR", m_maxSAR.at(n))==false)
 			cerr << "SAR_Calculation::WriteToHDF5: can't dump to file...! " << endl;
 		std::vector<unsigned int> idx = {m_maxSAR_Idx.at(n)[0],m_maxSAR_Idx.at(n)[1],m_maxSAR_Idx.at(n)[2]};
-		if (out_file.WriteAtrribute("/FieldData/FD/"+ss.str(),"maxSAR_idx", idx)==false)
+		if (out_file.WriteAttribute("/FieldData/FD/"+ss.str(),"maxSAR_idx", idx)==false)
 			cerr << "SAR_Calculation::WriteToHDF5: can't dump to file...! " << endl;
 	}
 
-	out_file.WriteAtrribute("/FieldData/FD","valid_cubes",m_Valid);
-	out_file.WriteAtrribute("/FieldData/FD","used_cubes",m_Used);
-	out_file.WriteAtrribute("/FieldData/FD","unused_cubes",m_Unused);
-	out_file.WriteAtrribute("/FieldData/FD","air_cubes",m_AirVoxel);
+	out_file.WriteAttribute("/FieldData/FD","valid_cubes",m_Valid);
+	out_file.WriteAttribute("/FieldData/FD","used_cubes",m_Used);
+	out_file.WriteAttribute("/FieldData/FD","unused_cubes",m_Unused);
+	out_file.WriteAttribute("/FieldData/FD","air_cubes",m_AirVoxel);
 
-	out_file.WriteAtrribute("/","proc_time", m_duration);
+	out_file.WriteAttribute("/","proc_time", m_duration);
 	return true;
 }
 
@@ -521,27 +521,27 @@ void SAR_Calculation::InitSAR()
 
 	DoAutoRange();
 
-	m_posInOuput.Init("posInOutput", m_numLines);
-	// this will fill m_posInOuput with all 0, 0 meaning not in the output data
+	m_posInOutput.Init("posInOutput", m_numLines);
+	// this will fill m_posInOutput with all 0, 0 meaning not in the output data
 	// a value > 0 gives the position+1 in the 3D output array
 	unsigned int pos[3];
 	unsigned int loc=0;
-	for (unsigned int i=0; i<m_cellIndicies[0].size();++i)
+	for (unsigned int i=0; i<m_cellIndices[0].size();++i)
 	{
-		pos[0] = m_cellIndicies[0].at(i);
-		for (unsigned int j=0; j<m_cellIndicies[1].size();++j)
+		pos[0] = m_cellIndices[0].at(i);
+		for (unsigned int j=0; j<m_cellIndices[1].size();++j)
 		{
-			pos[1] = m_cellIndicies[1].at(j);
-			for (unsigned int k=0; k<m_cellIndicies[2].size();++k)
+			pos[1] = m_cellIndices[1].at(j);
+			for (unsigned int k=0; k<m_cellIndices[2].size();++k)
 			{
-				pos[2] = m_cellIndicies[2].at(k);
-				m_posInOuput({pos[0],pos[1],pos[2]}) = loc + 1;
+				pos[2] = m_cellIndices[2].at(k);
+				m_posInOutput({pos[0],pos[1],pos[2]}) = loc + 1;
 				++loc;
 			}
 		}
 	}
 
-	unsigned int out_num_lines[3] = {(unsigned int)m_cellIndicies[0].size(),(unsigned int)m_cellIndicies[1].size(),(unsigned int)m_cellIndicies[2].size()};
+	unsigned int out_num_lines[3] = {(unsigned int)m_cellIndices[0].size(),(unsigned int)m_cellIndices[1].size(),(unsigned int)m_cellIndices[2].size()};
 	if ((m_record_cube_stats) && (m_freq.size()==1))
 	{
 		cout << "Enable Cube Statistics" << endl;
@@ -612,15 +612,15 @@ bool SAR_Calculation::CalcLocalSAR()
 	float dens;
 	float lSAR;
 	unsigned int pos[3];
-	for (unsigned int i=0; i<m_cellIndicies[0].size();++i)
+	for (unsigned int i=0; i<m_cellIndices[0].size();++i)
 	{
-		pos[0] = m_cellIndicies[0].at(i);
-		for (unsigned int j=0; j<m_cellIndicies[1].size();++j)
+		pos[0] = m_cellIndices[0].at(i);
+		for (unsigned int j=0; j<m_cellIndices[1].size();++j)
 		{
-			pos[1] = m_cellIndicies[1].at(j);
-			for (unsigned int k=0; k<m_cellIndicies[2].size();++k)
+			pos[1] = m_cellIndices[1].at(j);
+			for (unsigned int k=0; k<m_cellIndices[2].size();++k)
 			{
-				pos[2] = m_cellIndicies[2].at(k);
+				pos[2] = m_cellIndices[2].at(k);
 				dens = (*m_cell_density)(pos[0], pos[1], pos[2]);
 
 				if (dens>0)
@@ -961,7 +961,7 @@ void SAR_Calculation::AssignUsedSAR(double* vx_sar, unsigned int start[3], unsig
 				if ( (!is_partial[0] && !is_partial[1] && !is_partial[2]) || m_markPartialAsUsed)
 				{
 					loc = m_cell_density->linearIndex({f_pos[0], f_pos[1], f_pos[2]});
-					out_loc = m_posInOuput.data(loc);
+					out_loc = m_posInOutput.data(loc);
 					if (out_loc==0)
 						continue;
 					--out_loc;
@@ -1031,13 +1031,13 @@ bool SAR_Calculation::CalcAvgStep1SAR(ArrayLib::ArrayIJK<bool> &Vx_Valid, ArrayL
 	while (true)
 	{
 		i = m_nextStepChunk.fetch_add(1);
-		if (i>=m_cellIndicies[0].size())
+		if (i>=m_cellIndices[0].size())
 			break;
-		pos[0] = m_cellIndicies[0].at(i);
-		for (unsigned int j=0; j<m_cellIndicies[1].size();++j)
+		pos[0] = m_cellIndices[0].at(i);
+		for (unsigned int j=0; j<m_cellIndices[1].size();++j)
 		{
-			pos[1] = m_cellIndicies[1].at(j);
-			for (unsigned int k=0; k<m_cellIndicies[2].size();++k)
+			pos[1] = m_cellIndices[1].at(j);
+			for (unsigned int k=0; k<m_cellIndices[2].size();++k)
 			{
 				prog_cnt = m_progressCounter.fetch_add(1);
 				if (m_progress && (prog_cnt%prog_N==0))
@@ -1046,7 +1046,7 @@ bool SAR_Calculation::CalcAvgStep1SAR(ArrayLib::ArrayIJK<bool> &Vx_Valid, ArrayL
 					std::cout << "\rStep-1: " << (int)((float)prog_cnt/todo*100) << "%  ";
 					std::cout.flush();
 				}
-				pos[2] = m_cellIndicies[2].at(k);
+				pos[2] = m_cellIndices[2].at(k);
 				loc = m_cell_density->linearIndex({pos[0],pos[1],pos[2]});
 				out_loc = Vx_Valid.linearIndex({i,j,k});
 				if (cell_density[loc]==0)
@@ -1161,20 +1161,20 @@ bool SAR_Calculation::CalcAvgStep2SAR(ArrayLib::ArrayIJK<bool> &Vx_Valid, ArrayL
 	std::vector<std::array<unsigned int,3>> local_maxSAR_Idx(N, {0u,0u,0u});
 
 	size_t next_id = 0;
-	size_t xy_size = m_cellIndicies[0].size() * m_cellIndicies[1].size();
+	size_t xy_size = m_cellIndices[0].size() * m_cellIndices[1].size();
 	unsigned int i,j;
 	while (true)
 	{
 		next_id = m_nextStepChunk.fetch_add(1);
 		if (next_id>=xy_size)
 			break;
-		i = next_id/m_cellIndicies[1].size();
-		j = next_id % m_cellIndicies[1].size();
-		pos[0] = m_cellIndicies[0].at(i);
-		pos[1] = m_cellIndicies[1].at(j);
-		for (unsigned int k=0; k<m_cellIndicies[2].size();++k)
+		i = next_id/m_cellIndices[1].size();
+		j = next_id % m_cellIndices[1].size();
+		pos[0] = m_cellIndices[0].at(i);
+		pos[1] = m_cellIndices[1].at(j);
+		for (unsigned int k=0; k<m_cellIndices[2].size();++k)
 		{
-			pos[2] = m_cellIndicies[2].at(k);
+			pos[2] = m_cellIndices[2].at(k);
 			loc = m_cell_density->linearIndex({pos[0],pos[1],pos[2]});
 			out_loc = Vx_Valid.linearIndex({i,j,k});
 			if (!vx_valid_data[out_loc] && vx_used_data[out_loc])
@@ -1279,14 +1279,14 @@ bool SAR_Calculation::CalcAveragedSAR(unsigned int numThreads)
 	m_AirVoxel=0;
 	m_step1_case1=m_step1_case2=m_step1_no_conv=0;
 
-	unsigned int out_num_lines[3] = {(unsigned int)m_cellIndicies[0].size(),(unsigned int)m_cellIndicies[1].size(),(unsigned int)m_cellIndicies[2].size()};
+	unsigned int out_num_lines[3] = {(unsigned int)m_cellIndices[0].size(),(unsigned int)m_cellIndices[1].size(),(unsigned int)m_cellIndices[2].size()};
 	ArrayLib::ArrayIJK<bool> Vx_Used("vx_used", out_num_lines);
 	ArrayLib::ArrayIJK<bool> Vx_Valid("vx_valid", out_num_lines);
 
 	if (numThreads==0)
 		numThreads = std::thread::hardware_concurrency();
 
-	numThreads = min((size_t)numThreads, m_cellIndicies[0].size());
+	numThreads = min((size_t)numThreads, m_cellIndices[0].size());
 
 	if (m_DebugLevel>0)
 		cout << "Using " << numThreads << " number of threads" << endl;

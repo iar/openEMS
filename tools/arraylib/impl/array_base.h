@@ -63,7 +63,8 @@ protected:
 	bool m_swapped=false; // record if swapped axis
 	std::array<IndexType, rank> m_extent = {};
 	std::array<IndexType, rank> m_stride = {};
-	IndexType m_size=0, m_bytes=0;
+	IndexType m_size=0;
+	size_t m_bytes=0;
 
 	T* __restrict m_ptr = NULL;
 
@@ -85,9 +86,11 @@ public:
 	{
 		if (this->m_ptr==NULL) return;
 		AllocatorType::free(this->m_ptr, this->m_size);
-		this->m_name = "";
-		this->m_ptr  = NULL;
-		this->m_size = 0;
+		this->m_name    = "";
+		this->m_ptr     = NULL;
+		this->m_size    = 0;
+		this->m_bytes   = 0;
+		this->m_swapped = false;
 		for (size_t n=0;n<rank;++n)
 		{
 			this->m_extent[n] = 0;
@@ -127,7 +130,7 @@ public:
 	IndexType                   size()              const { return m_size;     }
 
 	// return occupied memory
-	IndexType                   bytes()             const { return m_bytes;    }
+	size_t                      bytes()             const { return m_bytes;    }
 
 	// return raw pointer to underlying data
 	T*                          data()              const { return m_ptr;      }
