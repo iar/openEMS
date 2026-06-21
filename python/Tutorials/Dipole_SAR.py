@@ -78,7 +78,7 @@ brain.center = [100, 0, 0]
 ## * Limit the simulation to 30k timesteps
 ## * Define a reduced end criteria of -40dB
 ## * Disabled advanced material cell interpolation and make sure to use an unaveraged constant cell material
-##   This is less accurate but is required for SAR averaging according to IEC/IEEE 62704-1
+## * This is less accurate but is required for SAR averaging according to IEC/IEEE 62704-1
 FDTD = openEMS(NrTS=30000, EndCriteria=1e-4, CellConstantMaterial=True)
 FDTD.SetGaussExcite( 0, f_stop )
 FDTD.SetBoundaryCond( ['PML_8']*6 )
