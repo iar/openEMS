@@ -375,7 +375,7 @@ void openEMS::WelcomeScreen()
 
 	cout << " ---------------------------------------------------------------------- " << endl;
 	cout << " | openEMS " << bits << " -- version " << GIT_VERSION << endl;
-	cout << " | (C) 2010-2025 Thorsten Liebig <thorsten.liebig@gmx.de>  GPL license"   << endl;
+	cout << " | (C) 2010-2026 Thorsten Liebig <thorsten.liebig@gmx.de>  GPL license"   << endl;
 	cout << " ---------------------------------------------------------------------- " << endl;
 	cout << openEMS::GetExtLibsInfo("\t") << endl;
 }
