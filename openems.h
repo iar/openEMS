@@ -151,7 +151,7 @@ protected:
 	bool m_CellConstantMaterial;
 	Operator* FDTD_Op;
 	Engine* FDTD_Eng;
-	Engine_Ext_SteadyState* Eng_Ext_SSD;
+	Engine_Ext_SteadyState* Eng_Ext_SSD; //!< non-owning observer; owned/deleted by the engine (m_Eng_exts)
 	ProcessingArray* PA;
 
 	Excitation* m_Exc;
