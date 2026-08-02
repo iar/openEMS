@@ -667,7 +667,7 @@ cdef class openEMS:
     def Write2XML(self, file):
         """ Write2XML(file)
 
-        Write the openEMS FDTD setup and CSX data into an *.xml file.
+        Write the openEMS FDTD setup and CSX data into an \*.xml file.
         Can be run by the standalone openEMS binary.
 
         :param file: xml file name
@@ -677,7 +677,7 @@ cdef class openEMS:
     def ReadFromXML(self, file):
         """ ReadFromXML(file)
 
-        Read the openEMS FDTD setup and CSX data from an *.xml file.
+        Read the openEMS FDTD setup and CSX data from an \*.xml file.
         Warning: Will call reset before reading the file!
 
         :param file: xml file name
