@@ -61,18 +61,14 @@ IT'IS Foundation (https://itis.swiss/virtual-population/).
 Once downloaded, the raw files are converted to an openEMS HDF5 DiscMaterial
 file by ``Convert_VF_DiscMaterial`` (run once, result is cached).
 
-**Alternative — homogeneous phantom:**
+**Automatic phantom fallback:**
 
-If you do not have access to the Virtual Family dataset, replace the
-``Convert_VF_DiscMaterial`` call and the ``AddDiscMaterial`` box with a simple
-ellipsoidal head phantom::
-
-    CSX = AddMaterial(CSX, 'phantom_head');
-    CSX = SetMaterialProperty(CSX, 'phantom_head', 'Epsilon', 60, 'Kappa', 0.7, 'Density', 1040);
-    CSX = AddSphere(CSX, 'phantom_head', 0, [0 0 0], 110, 'Transform', {'Scale', [1 0.8 1]});
-
-The material properties (εr = 60, σ = 0.7 S/m) approximate average head tissue
-at 297 MHz and are sufficient to demonstrate the B1 and SAR workflow.
+If the VF dataset is not installed, the script falls back automatically to
+the bundled ``resources/phantoms/phantom_head_298MHz.h5`` — a 3-layer
+ellipsoidal head phantom (skin / skull / brain) with tissue properties at
+298 MHz from the IT'IS database, shared with the Python interface. The
+phantom uses the same HDF5 DiscMaterial format as the converted VF model,
+so the full B1 and SAR workflow runs without any changes.
 
 Literature
 ----------

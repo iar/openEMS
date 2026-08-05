@@ -39,7 +39,9 @@ loop.port_R = 10;       % feeding port resistance
 %% slices the full-body dataset to the head/shoulder region (``body_model_range``)
 %% at 298 MHz, which keeps memory use manageable. This conversion only needs
 %% to run once; subsequent script runs skip it if the HDF5 output file
-%% already exists.
+%% already exists. If the VF dataset is not installed the script falls back
+%% automatically to a simple ellipsoidal phantom with average head-tissue
+%% properties at 298 MHz — no manual changes are required.
 % set file name for human body model to create with "Convert_VF_DiscMaterial"
 % the file name should contain a full path
 body_model_file = [pwd '/Ella_centered_298MHz.h5'];
@@ -53,10 +55,20 @@ VF_mat_db_file = '/tmp/DB_h5_20120711_SEMCADv14.8.h5';
 
 % delete(body_model_file); % uncomment to delete old model if something changed
 
-% convert model (if it does not exist)
-Convert_VF_DiscMaterial(VF_raw_filesuffix, VF_mat_db_file, body_model_file, ...
-                        'Frequency', 298e6, 'Center', 1, ...
-                        'Range', body_model_range);
+% use cached HDF5 if it already exists; otherwise try to convert from raw VF files;
+% fall back to a homogeneous phantom if the VF dataset is unavailable
+use_body_model = exist(body_model_file, 'file') == 2;
+if ~use_body_model
+    try
+        Convert_VF_DiscMaterial(VF_raw_filesuffix, VF_mat_db_file, body_model_file, ...
+                                'Frequency', 298e6, 'Center', 1, ...
+                                'Range', body_model_range);
+        use_body_model = 1;
+    catch
+        warning('openEMS:MRI_Loop_Coil', ...
+            'VF body model not found — using homogeneous ellipsoidal phantom fallback.');
+    end
+end
 
 % rotate model to face the nose in x-dir, and translate
 body_model_transform = {'Rotate_X',pi,'Rotate_Z',pi/2, ...
@@ -175,13 +187,23 @@ stop  = [loop.pos_x +loop.air_gap/2 -loop.length/2+loop.strip_width/2+loop.air_g
 
 %% Body Model Placement
 %% --------------------
-%% The pre-converted HDF5 discrete material file is linked into the CSXCAD
-%% structure and bounded by ``body_box``, which crops the dataset to the
-%% shoulder-to-crown region. The ``Scale`` and ``Transform`` parameters
-%% orient the voxel grid so that Ella faces in the x-direction and the head
-%% centre is positioned correctly relative to the loop at x = -130 mm.
-CSX = AddDiscMaterial(CSX, 'body_model', 'File', body_model_file, 'Scale', 1/unit, 'Transform', body_model_transform);
-CSX = AddBox(CSX, 'body_model', 0, body_box.start, body_box.stop);
+%% When the VF dataset is available, the pre-converted HDF5 discrete material
+%% file is linked into CSXCAD and bounded by ``body_box``, which crops the
+%% dataset to the shoulder-to-crown region; ``Scale`` and ``Transform``
+%% orient the voxel grid so that Ella faces in the x-direction with the head
+%% centre positioned correctly relative to the loop at x = -130 mm. Without
+%% VF data a bundled 3-layer ellipsoidal head phantom (skin / skull / brain,
+%% tissue properties at 298 MHz from the IT'IS database) is used instead.
+%% It produces the same SAR and B1 workflow output with a realistic three-tissue
+%% distribution; the same ``Scale`` applies as the phantom mesh is in metres.
+if use_body_model
+    CSX = AddDiscMaterial(CSX, 'body_model', 'File', body_model_file, 'Scale', 1/unit, 'Transform', body_model_transform);
+    CSX = AddBox(CSX, 'body_model', 0, body_box.start, body_box.stop);
+else
+    phantom_file = fullfile(fileparts(mfilename('fullpath')), '..', '..', 'resources', 'phantoms', 'phantom_head_298MHz.h5');
+    CSX = AddDiscMaterial(CSX, 'body_model', 'File', phantom_file, 'Scale', 1/unit);
+    CSX = AddBox(CSX, 'body_model', 0, body_box.start, body_box.stop);
+end
 
 %% Mesh Generation
 %% ---------------

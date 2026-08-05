@@ -43,7 +43,10 @@ BC.feed_amp = [1 -1j];
 %% by openEMS. The Virtual Family provides realistic tissue properties
 %% (permittivity and conductivity) at the simulation frequency, which are
 %% essential for accurate SAR predictions. The converted file is cached on
-%% disk to avoid repeating this time-consuming step on re-runs.
+%% disk to avoid repeating this time-consuming step on re-runs. If the VF
+%% dataset is not installed the script falls back automatically to a
+%% homogeneous cylindrical phantom with average head-tissue properties at
+%% 128 MHz — no manual changes are required.
 % set file name for human body model to create with "Convert_VF_DiscMaterial"
 % the file name should contain a full path
 body_model_file = [pwd '/Ella_centered_' num2str(f0/1e6) 'MHz.h5'];
@@ -59,10 +62,20 @@ VF_mat_db_file = '/tmp/DB_h5_20120711_SEMCADv14.8.h5';
 
 % delete(body_model_file); % uncomment to delete old model if something changed
 
-% convert model (if it does not exist)
-Convert_VF_DiscMaterial(VF_raw_filesuffix, VF_mat_db_file, body_model_file, ...
-                        'Frequency', f0, 'Center', 1, ...
-                        'Range', body_model_range);
+% use cached HDF5 if it already exists; otherwise try to convert from raw VF files;
+% fall back to a homogeneous phantom if the VF dataset is unavailable
+use_body_model = exist(body_model_file, 'file') == 2;
+if ~use_body_model
+    try
+        Convert_VF_DiscMaterial(VF_raw_filesuffix, VF_mat_db_file, body_model_file, ...
+                                'Frequency', f0, 'Center', 1, ...
+                                'Range', body_model_range);
+        use_body_model = 1;
+    catch
+        warning('openEMS:MRI_LP_Birdcage', ...
+            'VF body model not found — using homogeneous cylindrical phantom fallback.');
+    end
+end
 
 % rotate model to face the nose in +y-dir, and translate
 body_model_transform = {'Rotate_X',pi,'Rotate_Z',pi, ...
@@ -228,14 +241,27 @@ numCells = numel(mesh.r)*numel(mesh.a)*numel(mesh.z);
 
 %% Body Model Material Assignment
 %% --------------------------------
-%% Insert the discretized body model as a disc material covering the full
-%% mesh extent. The spatial transform orients the Ella phantom so the nose
-%% points in the +y direction and the head/shoulder section aligns with
-%% the coil center.
-CSX = AddDiscMaterial(CSX, 'body_model', 'File', body_model_file, 'Scale', 1/unit, 'Transform', body_model_transform);
-start = [mesh.r(1)   mesh.a(1)   mesh.z(1)];
-stop =  [mesh.r(end) mesh.a(end) mesh.z(end)];
-CSX = AddBox(CSX, 'body_model', 0, start, stop);
+%% When the VF dataset is available, the discretized body model is inserted as
+%% a disc material covering the full mesh extent; the spatial transform orients
+%% Ella so the nose points in the +y direction and the head/shoulder section
+%% aligns with the coil centre. Without VF data a bundled 3-layer cylindrical
+%% body phantom (skin / bone / tissue, properties at 128 MHz from the IT'IS
+%% database, radius 100 mm) is used. The cylindrical FDTD mesh converts each
+%% cell centre (r, alpha, z) to Cartesian before the disc-material lookup, so
+%% the Cartesian phantom mesh is sampled correctly. ``Scale`` is the same as
+%% for the VF model since the phantom mesh is also in metres.
+if use_body_model
+    CSX = AddDiscMaterial(CSX, 'body_model', 'File', body_model_file, 'Scale', 1/unit, 'Transform', body_model_transform);
+    start = [mesh.r(1)   mesh.a(1)   mesh.z(1)];
+    stop =  [mesh.r(end) mesh.a(end) mesh.z(end)];
+    CSX = AddBox(CSX, 'body_model', 0, start, stop);
+else
+    phantom_file = fullfile(fileparts(mfilename('fullpath')), '..', '..', 'resources', 'phantoms', 'phantom_body_128MHz.h5');
+    CSX = AddDiscMaterial(CSX, 'body_model', 'File', phantom_file, 'Scale', 1/unit);
+    start = [mesh.r(1)   mesh.a(1)   mesh.z(1)];
+    stop =  [mesh.r(end) mesh.a(end) mesh.z(end)];
+    CSX = AddBox(CSX, 'body_model', 0, start, stop);
+end
 
 
 %% Field and SAR Dump Boxes
