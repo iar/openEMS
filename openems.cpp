@@ -1117,6 +1117,9 @@ void openEMS::SetCSX(ContinuousStructure* csx)
 {
 	delete m_CSX;
 	m_CSX = csx;
+	// we destroy it, so tell language bindings not to do it as well
+	if (m_CSX)
+		m_CSX->SetOwnedExternally(true);
 }
 
 ContinuousStructure* openEMS::GetCSX() const

@@ -112,7 +112,10 @@ public:
 
 	Excitation* InitExcitation();
 
+	//! Set the geometry, taking ownership: \a csx is destroyed by this class,
+	//! as is any structure set before. \sa GetCSX
 	void SetCSX(ContinuousStructure* csx);
+	//! Get the geometry, which stays owned by this class. \sa SetCSX
 	ContinuousStructure* GetCSX() const;
 
 	Engine_Interface_FDTD* NewEngineInterface(int multigridlevel = 0);
